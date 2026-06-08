@@ -3,11 +3,11 @@ const session = require('express-session');
 const { createClient } = require('@supabase/supabase-js');
 const nodemailer = require('nodemailer');
 const app = express();
-const logoUrl = "/verytech-beyaz.png";
 
 // 1. SUPABASE BAĞLANTISI
 const supabaseUrl = process.env.SUPABASE_URL || 'https://ravamzdhieateguwcofd.supabase.co';
 const supabaseKey = process.env.SUPABASE_ANON_KEY || 'sb_publishable_HB3Y0BHBJuFar1v8UY0ZbQ_7R0Iv7c8';
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // 2. MIDDLEWARE VE OTURUM AYARLARI
@@ -22,6 +22,9 @@ app.use(session({
 }));
 
 app.use(express.static('public'));
+
+// 🚀 YENİ LOKAL LOGO DEĞİŞKENİ (Artık internete bağımlı değil, public klasöründen okur)
+const logoUrl = "/verytech-beyaz.png";
 
 // 3. HAZIR GMAIL SMTP ENTEGRASYONU
 const transporter = nodemailer.createTransport({
@@ -53,15 +56,7 @@ app.get('/', (req, res) => {
     </head>
     <body>
         <div class="login-card text-center">
-            <div style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 2rem;">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L2 22H22L12 2Z" fill="#3b82f6" stroke="#60a5fa" stroke-width="1.5" stroke-linejoin="round"/>
-                    <path d="M12 18V10" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
-                    <circle cx="12" cy="7" r="1.5" fill="#ffffff"/>
-                </svg>
-                <span style="color: #ffffff; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; font-family: 'Segoe UI', sans-serif;">Very<span style="font-weight: 400; color: #cbd5e1;">tech</span></span>
-            </div>
-
+            <img src="${logoUrl}" alt="Verytech" style="height: 40px; width: auto; object-fit: contain; margin-bottom: 2rem;">
             <form action="/login" method="POST">
                 <div class="mb-3 text-start">
                     <label class="form-label text-secondary small fw-bold">Kullanıcı Adı</label>
@@ -246,14 +241,7 @@ app.get('/dashboard', async (req, res) => {
     
     <nav class="navbar navbar-dark navbar-custom px-4 py-3 mb-4 d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center gap-3">
-            <div style="display: flex; align-items: center; gap: 4px;">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L2 22H22L12 2Z" fill="#3b82f6" stroke="#60a5fa" stroke-width="1.5" stroke-linejoin="round"/>
-                    <path d="M12 18V10" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
-                    <circle cx="12" cy="7" r="1.5" fill="#ffffff"/>
-                </svg>
-                <span style="color: #ffffff; font-size: 20px; font-weight: 800; letter-spacing: -0.5px; font-family: 'Segoe UI', sans-serif;">Very<span style="font-weight: 400; color: #94a3b8;">tech</span></span>
-            </div>
+            <img src="${logoUrl}" alt="Verytech" style="height: 32px; width: auto; object-fit: contain;" />
             <div style="width: 1px; height: 25px; background: rgba(255,255,255,0.2);"></div>
             <a href="/dashboard" class="navbar-brand fw-bold m-0" style="letter-spacing: 1.5px; font-size: 16px;">GARANTİ TAKİP SİSTEMİ</a>
         </div>
@@ -497,14 +485,7 @@ app.get('/detay', async (req, res) => {
     <body>
     <nav class="navbar navbar-dark navbar-custom px-4 py-3 mb-4 d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center gap-3">
-            <div style="display: flex; align-items: center; gap: 4px;">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L2 22H22L12 2Z" fill="#3b82f6" stroke="#60a5fa" stroke-width="1.5" stroke-linejoin="round"/>
-                    <path d="M12 18V10" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
-                    <circle cx="12" cy="7" r="1.5" fill="#ffffff"/>
-                </svg>
-                <span style="color: #ffffff; font-size: 20px; font-weight: 800; letter-spacing: -0.5px; font-family: 'Segoe UI', sans-serif;">Very<span style="font-weight: 400; color: #94a3b8;">tech</span></span>
-            </div>
+            <img src="${logoUrl}" alt="Verytech" style="height: 32px; width: auto; object-fit: contain;" />
             <div style="width: 1px; height: 25px; background: rgba(255,255,255,0.2);"></div>
             <span class="navbar-brand fw-bold m-0" style="font-size: 16px;">DETAYLI FİLTRE RAPORU</span>
         </div>
