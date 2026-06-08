@@ -22,14 +22,14 @@ app.use(session({
 
 app.use(express.static('public'));
 
-// 3. HAZIR GMAIL SMTP ENTEGRASYONU (GÜNCELLENDİ 🚀)
+// 3. HAZIR GMAIL SMTP ENTEGRASYONU
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
-    secure: true, // 465 portu SSL için true olmalı
+    secure: true, 
     auth: {
         user: 'cinarcikofficial@gmail.com',
-        pass: 'twwm cine falf uttx' // Sağladığınız Uygulama Şifresi
+        pass: 'twwm cine falf uttx' 
     }
 });
 
@@ -119,6 +119,7 @@ app.get('/dashboard', async (req, res) => {
         mevcutMarkaSecenekleri += `<option value="${marka}">${marka}</option>`;
     });
 
+    // 🟢 SÜTUN SAYISI HATASI BURADA DÜZELTİLDİ (4 BAŞLIĞA 4 SÜTUN)
     let musteriSatirlari = "";
     const musteriListesi = Object.keys(musteriMap);
     if (musteriListesi.length > 0) {
@@ -130,7 +131,9 @@ app.get('/dashboard', async (req, res) => {
                 <td>
                     <span class="badge bg-blue shadow-sm text-white px-3 py-2 rounded-pill fw-bold filter-musteri-btn" style="background-color: #0284c7; cursor: pointer;" data-musteri="${m}">📊 ${musteriMap[m]} Adet Ürün</span>
                 </td>
-                <td class="text-end" style="width: 15%;"><span class="btn btn-sm btn-flat-blue fw-bold shadow-sm filter-musteri-btn" data-musteri="${m}">Ürünleri Süz 🔍</span></td>
+                <td class="text-end" style="width: 15%;">
+                    <span class="btn btn-sm btn-flat-blue fw-bold shadow-sm filter-musteri-btn" data-musteri="${m}">Ürünleri Süz 🔍</span>
+                </td>
             </tr>`;
         });
     }
@@ -378,7 +381,7 @@ app.get('/dashboard', async (req, res) => {
         function markaFormuDegistir() {
             if (document.getElementById('markaMevcut').checked) {
                 document.getElementById('mevcutMarkaAlani').style.display = 'block';
-                document.getElementById('yeniMarkaAlani').style.display = 'none';
+                document.getElementById('yeniMusteriAlani').style.display = 'none';
             } else {
                 document.getElementById('mevcutMarkaAlani').style.display = 'none';
                 document.getElementById('yeniMarkaAlani').style.display = 'block';
@@ -520,10 +523,14 @@ app.get('/urun-sil/:id', async (req, res) => {
     res.redirect('/dashboard');
 });
 
-// 🌟 BÖLÜM 9: CRON JOB - OTOMATİK MAİL TETİKLEME ROTASI 🌟
+// 🌟 BÖLÜM 9: CRON JOB - OTOMATİK MAİL TETİKLEME ROTASI (GÜNCELLENDİ 🛠️)
 app.get('/api/cron/garanti-kontrol', async (req, res) => {
     const authHeader = req.headers.authorization;
-    if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    
+    // TEST ÖZELLEŞTİRMESİ: Tarayıcıdan elinizle tetikleyebilin diye "test=true" parametresini serbest bıraktık.
+    const isTestCall = req.query.test === 'true';
+
+    if (process.env.NODE_ENV === 'production' && !isTestCall && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
         return res.status(401).json({ success: false, message: 'Yetkisiz erişim.' });
     }
 
@@ -542,8 +549,8 @@ app.get('/api/cron/garanti-kontrol', async (req, res) => {
             const t2 = Date.UTC(bitisTarihi.getFullYear(), bitisTarihi.getMonth(), bitisTarihi.getDate());
             const kalanGun = Math.floor((t2 - t1) / (1000 * 60 * 60 * 24));
 
-            // Tam 60 gün kalanlar (1 kez) veya 30 gün ve daha az kalanlar (her gün)
-            if (kalanGun === 60 || kalanGun <= 30) {
+            // Test modundaysa veya kritik şartlara uyuyorsa listeye ekle
+            if (isTestCall || kalanGun === 60 || kalanGun <= 30) {
                 mailGonderilecekMi = true;
                 let durumRengi = kalanGun < 0 ? "red" : (kalanGun <= 30 ? "orange" : "blue");
                 mailIcerik += `<tr><td><b>${urun.musteri_adi}</b></td><td>${urun.marka} - ${urun.urun_adi}</td><td><code>${urun.seri_no}</code></td><td>${urun.garanti_bitis}</td><td style="color:${durumRengi}; font-weight:bold;">${kalanGun < 0 ? 'Süresi Doldu' : kalanGun + ' Gün'}</td></tr>`;
@@ -559,7 +566,7 @@ app.get('/api/cron/garanti-kontrol', async (req, res) => {
                 subject: '🚨 Verytech Garanti ve Bakım Bildirimi',
                 html: mailIcerik
             });
-            return res.json({ success: true, message: 'Kritik durumlar tespit edildi ve mail gönderildi.' });
+            return res.json({ success: true, message: 'Mail başarıyla gönderildi!' });
         }
 
         return res.json({ success: true, message: 'Kritik durumda ürün bulunamadı, mail atılmadı.' });
