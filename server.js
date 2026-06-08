@@ -4,10 +4,9 @@ const { createClient } = require('@supabase/supabase-js');
 const nodemailer = require('nodemailer');
 const app = express();
 
-// 1. SUPABASE BAĞLANTISI
+// 1. SUPABASE BAĞLANTISI (GÜNCEL VERYTECH BAĞLANTILARI)
 const supabaseUrl = process.env.SUPABASE_URL || 'https://ravamzdhieateguwcofd.supabase.co';
 const supabaseKey = process.env.SUPABASE_ANON_KEY || 'sb_publishable_HB3Y0BHBJuFar1v8UY0ZbQ_7R0Iv7c8';
-
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // 2. MIDDLEWARE VE OTURUM AYARLARI
@@ -18,10 +17,19 @@ app.use(session({
     secret: 'verytech_gizli_anahtar_123',
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false }
+    cookie: { secure: false } // Vercel'de HTTPS altında çalışırken production'da true yapabilirsin
 }));
 
 app.use(express.static('public'));
+
+// 🛡️ GÜVENLİK DUVARI (OTURUM KONTROL MIDDLEWARE)
+function oturumKontrolu(req, res, next) {
+    if (req.session && req.session.userId) {
+        return next(); // Oturum geçerliyse bir sonraki sayfaya/işleme izin ver
+    }
+    // Oturum yoksa direkt giriş sayfasına yönlendir
+    res.redirect('/');
+}
 
 // 🚀 HAFIZADAN OKUNAN LOGO DEĞİŞKENİ (Base64 Formatı)
 const logoUrl = "data:image/png;base64,iVBORw0KGgoAAA..."; 
@@ -171,7 +179,6 @@ app.post('/sifremi-unuttum', async (req, res) => {
     if (guncellemeHatasi) return res.status(500).send("Veritabanı Hatası: " + guncellemeHatasi.message);
 
     try {
-        // ✨ GÖNDEREN İSMİ GÜNCELLENDİ
         await transporter.sendMail({
             from: '"Verytech Garanti Takip Sistemi" <cinarcikofficial@gmail.com>',
             to: temizEmail,
@@ -243,7 +250,6 @@ app.post('/kayit-ol', async (req, res) => {
     if (dbError) return res.status(500).send("Veritabanı Hatası: " + dbError.message);
 
     try {
-        // ✨ GÖNDEREN İSMİ GÜNCELLENDİ
         await transporter.sendMail({
             from: '"Verytech Garanti Takip Sistemi" <cinarcikofficial@gmail.com>',
             to: temizEmail,
@@ -366,10 +372,11 @@ app.get('/logout', (req, res) => {
     res.redirect('/');
 });
 
+
+// 🔒 BU HİZADAN SONRAKİ TÜM YÖNETİM GRUBU ROTARLARI MIDDLEWARE İLE GÜVENDE!
+
 // DASHBOARD EKRANI
-app.get('/dashboard', async (req, res) => {
-    if (!req.session.userId) return res.redirect('/');
-    
+app.get('/dashboard', oturumKontrolu, async (req, res) => {
     const bugun = new Date();
 
     const { data: tumUrunler, error } = await supabase
@@ -640,9 +647,7 @@ app.get('/dashboard', async (req, res) => {
 });
 
 // FILTRE DETAY SAYFASI
-app.get('/detay', async (req, res) => {
-    if (!req.session.userId) return res.redirect('/');
-    
+app.get('/detay', oturumKontrolu, async (req, res) => {
     const { type, q } = req.query;
     if (!type || !q) return res.redirect('/dashboard');
 
@@ -744,9 +749,7 @@ app.get('/detay', async (req, res) => {
     </html>`);
 });
 
-app.post('/urun-ekle', async (req, res) => {
-    if (!req.session.userId) return res.redirect('/');
-
+app.post('/urun-ekle', oturumKontrolu, async (req, res) => {
     let musteriAdi = "";
     if (req.body.musteri_tipi === "mevcut") {
         musteriAdi = req.body.mevcut_musteri;
@@ -785,9 +788,7 @@ app.post('/urun-ekle', async (req, res) => {
     res.redirect('/dashboard');
 });
 
-app.post('/urun-duzenle', async (req, res) => {
-    if (!req.session.userId) return res.redirect('/');
-    
+app.post('/urun-duzenle', oturumKontrolu, async (req, res) => {
     const { id, musteri_adi, edit_marka, urun_adi, seri_no, garanti_baslangic, garanti_bitis } = req.body;
 
     const { error } = await supabase
@@ -806,8 +807,7 @@ app.post('/urun-duzenle', async (req, res) => {
     res.redirect('/dashboard');
 });
 
-app.get('/urun-sil/:id', async (req, res) => {
-    if (!req.session.userId) return res.redirect('/');
+app.get('/urun-sil/:id', oturumKontrolu, async (req, res) => {
     const id = req.params.id;
 
     const { error } = await supabase
@@ -819,7 +819,7 @@ app.get('/urun-sil/:id', async (req, res) => {
     res.redirect('/dashboard');
 });
 
-// CRON OTOMASYON RAPORU RROTASI
+// CRON OTOMASYON RAPORU ROTASI
 app.get('/api/cron/garanti-kontrol', async (req, res) => {
     const authHeader = req.headers.authorization;
     if (process.env.NODE_ENV === 'production' && process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -850,7 +850,6 @@ app.get('/api/cron/garanti-kontrol', async (req, res) => {
         mailIcerik += `</tbody></table><br><p>Sisteme erişmek için Vercel panelinizi kullanabilirsiniz.</p>`;
 
         if (mailGonderilecekMi) {
-            // ✨ GÖNDEREN İSMİ GÜNCELLENDİ
             await transporter.sendMail({
                 from: '"Verytech Garanti Takip Sistemi" <cinarcikofficial@gmail.com>',
                 to: 'kerim.kaplan@verytech.com.tr',
