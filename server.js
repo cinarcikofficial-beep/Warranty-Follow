@@ -118,8 +118,8 @@ app.get('/dashboard', async (req, res) => {
     let musteriSatirlari = "";
     const musteriListesi = Object.keys(musteriMap);
     if (musteriListesi.length === 0) {
-        musteriSatirlari = `<tr><td colspan="4" class="text-center text-muted py-3">Henüz kayıtlı müşteri yok.</td></tr>`;
-    } else {
+    musteriSatirlari = `<tr><td colspan="4" class="text-center text-muted py-3">Henüz kayıtlı müşteri yok.</td></tr>`;
+}else {
         musteriListesi.forEach((m, idx) => {
             musteriSatirlari += `
             <tr>
