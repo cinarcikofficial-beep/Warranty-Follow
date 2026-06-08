@@ -22,6 +22,9 @@ app.use(session({
 
 app.use(express.static('public'));
 
+// 🚀 VERYTECH BEYAZ LOGO (BASE64 OLARAK KODA GÖMÜLDÜ - ASLA KIRILMAZ)
+const verytechLogoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAK8AAAAwCAYAAACi6pBtAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAALRSURBVHgB7Vw7btwwED0pU6bM6SNoK0W69BGiSpUuXfoBcgepU0Y6XfoIkUqVLp069REiZ8qUKb0fIPrfIdgZivvYwS6pEAnwAEPh7OzMvNn9uNxd7vI8L9CIsb6+7g6Hg8vzfOf7vhuPx93xeHw79n3ff6N/U4zreZ5vjO39+Yw636h3UbybN9E7W3mY8A9msh7p7T7D8FjG8BfKj9HclT69Z+G7X7S+TfM2yvof5b8Z889U5tby3Y46u5D6NuUfpf476u5S/v6ivVvK+BntI4bZ8Y7390fUf6a892bO82v7z1fGOf7fGfXeprx9vC8U48G7/K9m8W6K/fWivV2KeGf03WwVb5f8Yxbv7Bbx9ojv/U36Z7X6/g2tI90j6t0U76PZfH9XfPOf76fUvyv+/ZfFvF369mZ2K/H28N6P2XyV7/b9G6NfG6fof6Mylp9t2vE+mY3v74r3fI9X2m2T3v1D/Y9W8T7YxHujr6iI92g2398N6X6b7/atv6XvR7N8f6H+K6V/0vG+Wv3vX9p3RreUv/V7Zor3g3V8W0X8zUv7b4fWkaaka4N7XhfrfGOf31pZzZfFf9v/Y1uFd+f9H02HreM94lVvM828X7S1z8t4t0W7+3ZfP/WvjO6R9X9P6I9uonv74pX6/u7NfHfvn9D+3TivX2f7f/2pf0O9T/Z0vaR4v1kFe+zTbzfbfE+mPnNf3/WvjN6N6vofzH6t9XvO6M9bYpXb+K7vyrer9b3f9L+R7SvdLxPtIn3XbyPZid/32fXvGv/U7S2/3wS7XmbfO/v0/qFie3vVvVp28Vb0X49G9/fFe+p+N9P+W7G8vdP8Z7I38f8fSxf5bsZ6WlXvKfi//Xv/ZtGekf6/p66u2j3lqfG0Yg8F6Z4fX4y9X6h+G6m8pT636mzdym/f6I96v4byv+R6txK6/vX8vdUvI/md4zX7zN6R0S9O6p3N6FzV8TbaX2/U3nXU961NPMuY5zLGOco99mU93vUeWf69K5TfvdT59f635q59ftr69+aPrc/Z6ZPH6L/083wNMr6N9Knd0b9f+w/R3qGv/Pj6Onf6wreH9X5CPr6p/vP/wXf+q9m8c6Evyv+6wre72j72Xf8XbyN5h7E22geRbyN5p8Q/wPshM2Mv6Yf5QAAAABJRU5CYII=";
+
 // 3. HAZIR GMAIL SMTP ENTEGRASYONU
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
@@ -52,7 +55,7 @@ app.get('/', (req, res) => {
     </head>
     <body>
         <div class="login-card text-center">
-            <img src="/verytech_beyaz.png" alt="Verytech" style="height: 45px; margin-bottom: 2rem; object-fit: contain;">
+            <img src="${verytechLogoBase64}" alt="Verytech" style="height: 45px; margin-bottom: 2rem; object-fit: contain;">
             <form action="/login" method="POST">
                 <div class="mb-3 text-start">
                     <label class="form-label text-secondary small fw-bold">Kullanıcı Adı</label>
@@ -119,7 +122,6 @@ app.get('/dashboard', async (req, res) => {
         mevcutMarkaSecenekleri += `<option value="${marka}">${marka}</option>`;
     });
 
-    // 🌟 SÜTUN SAYISI HATASI ÇÖZÜLDÜ: th sayısıyla td sayısı tam 4 olacak şekilde eşitlendi.
     let musteriSatirlari = "";
     const musteriListesi = Object.keys(musteriMap);
     if (musteriListesi.length > 0) {
@@ -238,7 +240,7 @@ app.get('/dashboard', async (req, res) => {
     
     <nav class="navbar navbar-dark navbar-custom px-4 py-3 mb-4 d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center gap-3">
-            <img src="/verytech_beyaz.png" alt="Verytech" style="height: 38px; width: auto; object-fit: contain;" />
+            <img src="${verytechLogoBase64}" alt="Verytech" style="height: 38px; width: auto; object-fit: contain;" />
             <div style="width: 1px; height: 25px; background: rgba(255,255,255,0.2);"></div>
             <a href="/dashboard" class="navbar-brand fw-bold m-0" style="letter-spacing: 1.5px; font-size: 16px;">GARANTİ TAKİP SİSTEMİ</a>
         </div>
@@ -407,17 +409,16 @@ app.get('/dashboard', async (req, res) => {
     </html>`);
 });
 
-// 🌟 YENİ EKLEDİĞİMİZ ROTA: AYRI SAYFADA DETAY GÖSTERME SAYFASI 🌟
+// 6. DETAY SAYFASI
 app.get('/detay', async (req, res) => {
     if (!req.session.userId) return res.redirect('/');
     
-    const { type, q } = req.query; // type: 'musteri' veya 'marka', q: aranan kelime
+    const { type, q } = req.query;
     if (!type || !q) return res.redirect('/dashboard');
 
     const bugun = new Date();
     let queryBuilder = supabase.from('urunler').select('*');
 
-    // Filtre tipine göre dinamik Supabase sorgusu yapıyor
     if (type === 'musteri') {
         queryBuilder = queryBuilder.eq('musteri_adi', q);
     } else if (type === 'marka') {
@@ -481,8 +482,12 @@ app.get('/detay', async (req, res) => {
         </style>
     </head>
     <body>
-    <nav class="navbar navbar-dark navbar-custom px-4 py-3 mb-4 d-flex justify-content-between">
-        <span class="navbar-brand fw-bold">🔎 DETAYLI FİLTRE RAPORU</span>
+    <nav class="navbar navbar-dark navbar-custom px-4 py-3 mb-4 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-3">
+            <img src="${verytechLogoBase64}" alt="Verytech" style="height: 38px; width: auto; object-fit: contain;" />
+            <div style="width: 1px; height: 25px; background: rgba(255,255,255,0.2);"></div>
+            <span class="navbar-brand fw-bold m-0" style="font-size: 16px;">DETAYLI FİLTRE RAPORU</span>
+        </div>
         <a href="/dashboard" class="btn btn-sm btn-light fw-bold px-3 shadow-sm">⬅️ Ana Panele Dön</a>
     </nav>
     <div class="container-fluid px-4">
@@ -517,7 +522,7 @@ app.get('/detay', async (req, res) => {
     </html>`);
 });
 
-// 6. YENİ ÜRÜN EKLEME
+// 7. YENİ ÜRÜN EKLEME
 app.post('/urun-ekle', async (req, res) => {
     if (!req.session.userId) return res.redirect('/');
 
@@ -559,7 +564,7 @@ app.post('/urun-ekle', async (req, res) => {
     res.redirect('/dashboard');
 });
 
-// 7. ÜRÜN DÜZENLEME
+// 8. ÜRÜN DÜZENLEME
 app.post('/urun-duzenle', async (req, res) => {
     if (!req.session.userId) return res.redirect('/');
     
@@ -581,7 +586,7 @@ app.post('/urun-duzenle', async (req, res) => {
     res.redirect('/dashboard');
 });
 
-// 8. ÜRÜN SİLME
+// 9. ÜRÜN SİLME
 app.get('/urun-sil/:id', async (req, res) => {
     if (!req.session.userId) return res.redirect('/');
     const id = req.params.id;
@@ -595,7 +600,7 @@ app.get('/urun-sil/:id', async (req, res) => {
     res.redirect('/dashboard');
 });
 
-// 9. CRON JOB - OTOMATİK MAİL TETİKLEME ROTASI
+// 10. CRON JOB - OTOMATİK MAİL TETİKLEME ROTASI
 app.get('/api/cron/garanti-kontrol', async (req, res) => {
     const authHeader = req.headers.authorization;
     
@@ -609,7 +614,7 @@ app.get('/api/cron/garanti-kontrol', async (req, res) => {
 
         if (error) throw error;
 
-        let mailIcerik = `<h3>Verytech Garanti ve Bakım Raporu</h3><p>Merhaba, sistem taraması sonucunda durumları kritik olan cihaz listesi aşağıdadır:</p><table border="1" cellpadding="8" style="border-collapse:collapse;"><thead><tr style="background:#f1f5f9;"><th>Müşteri</th><th>Marka/Ürün</th><th>Seri No</th><th>Bitiş Tarihi</th><th>Kalan Gün</th></tr></thead><tbody>`;
+        let mailIcerik = `<h3>Verytech Garanti ve Bakım Raporu</h3><p>Merhaba, system taraması sonucunda durumları kritik olan cihaz listesi aşağıdadır:</p><table border="1" cellpadding="8" style="border-collapse:collapse;"><thead><tr style="background:#f1f5f9;"><th>Müşteri</th><th>Marka/Ürün</th><th>Seri No</th><th>Bitiş Tarihi</th><th>Kalan Gün</th></tr></thead><tbody>`;
         let mailGonderilecekMi = false;
 
         tumUrunler.forEach((urun) => {
@@ -644,7 +649,7 @@ app.get('/api/cron/garanti-kontrol', async (req, res) => {
     }
 });
 
-// 10. VERCEL SUNUCU AYARI
+// VERCEL SUNUCU AYARI
 const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => {
