@@ -87,7 +87,7 @@ app.get('/', (req, res) => {
                 </div>
                 <button type="submit" class="btn btn-primary w-100 fw-bold py-2 mb-3">Giriş Yap</button>
                 <div class="text-center">
-                    <a href="/kayit-ol" class="text-info small text-decoration-none fw-semibold">✨ Verytech Çalışanı Kayıt olabilir. Kayıt Olun</a>
+                    <a href="/kayit-ol" class="text-info small text-decoration-none fw-semibold">✨ Yalnızca Verytech Çalışanı! Kayıt Olun</a>
                 </div>
             </form>
         </div>
