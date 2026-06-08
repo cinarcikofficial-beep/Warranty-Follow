@@ -70,9 +70,12 @@ app.get('/', (req, res) => {
                     <label class="form-label text-secondary small fw-bold">E-Posta Adresi</label>
                     <input type="email" name="email" class="form-control" placeholder="ornek@verytech.com.tr" required autocomplete="off">
                 </div>
-                <div class="mb-4 text-start">
+                <div class="mb-3 text-start">
                     <label class="form-label text-secondary small fw-bold">Şifre</label>
                     <input type="password" name="password" class="form-control" required>
+                </div>
+                <div class="text-end mb-4">
+                    <a href="/sifremi-unuttum" class="text-warning small text-decoration-none fw-semibold">Şifremi Unuttum?</a>
                 </div>
                 <button type="submit" class="btn btn-primary w-100 fw-bold py-2 mb-3">Giriş Yap</button>
                 <div class="text-center">
@@ -89,7 +92,6 @@ app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     const temizEmail = (email || "").trim().toLowerCase();
 
-    // Veritabanında aktif kullanıcıyı ara
     const { data: user, error } = await supabase
         .from('kullanicilar')
         .select('*')
@@ -107,7 +109,87 @@ app.post('/login', async (req, res) => {
     res.redirect('/dashboard');
 });
 
-// 🆕 YENİ KULLANICI KAYIT EKRANI
+// 🆕 ŞİFREMİ UNUTTUM EKRANI
+app.get('/sifremi-unuttum', (req, res) => {
+    res.send(`
+    <!DOCTYPE html>
+    <html lang="tr">
+    <head>
+        <meta charset="UTF-8">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <title>Verytech - Şifremi Unuttum</title>
+        <style>
+            body { background-color: #0f172a; height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'Segoe UI', sans-serif; }
+            .login-card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+            .form-control { background: #0f172a; border-color: #475569; color: #fff; }
+        </style>
+    </head>
+    <body>
+        <div class="login-card text-center">
+            <img src="${logoUrl}" alt="Verytech" style="height: 30px; margin-bottom: 2rem;">
+            <h5 class="text-white fw-bold mb-3">Şifremi Unuttum</h5>
+            <p class="text-secondary small mb-4">Şifrenizi sıfırlamak için @verytech.com.tr uzantılı mail adresinizi girin.</p>
+            <form action="/sifremi-unuttum" method="POST">
+                <div class="mb-4 text-start">
+                    <label class="form-label text-secondary small fw-bold">E-Posta Adresi</label>
+                    <input type="email" name="email" class="form-control" placeholder="ad.soyad@verytech.com.tr" required>
+                </div>
+                <button type="submit" class="btn btn-warning text-dark w-100 fw-bold py-2 mb-3">Şifre Sıfırlama Kodu Gönder ✉️</button>
+                <a href="/" class="text-secondary small text-decoration-none">Geri Dön</a>
+            </form>
+        </div>
+    </body>
+    </html>`);
+});
+
+// ŞİFREMİ UNUTTUM - KOD GÖNDERME İŞLEMİ
+app.post('/sifremi-unuttum', async (req, res) => {
+    const { email } = req.body;
+    const temizEmail = (email || "").trim().toLowerCase();
+
+    if (!temizEmail.endsWith('@verytech.com.tr')) {
+        return res.send("<script>alert('Sadece @verytech.com.tr uzantılı e-postalar işlem yapabilir!'); history.back();</script>");
+    }
+
+    // Sistemde bu kullanıcı gerçekten kayıtlı mı kontrol ediyoruz
+    const { data: mevcut, error: bulmaHatasi } = await supabase
+        .from('kullanicilar')
+        .select('*')
+        .eq('email', temizEmail)
+        .single();
+
+    if (bulmaHatasi || !mevcut) {
+        return res.send("<script>alert('Bu e-posta adresi sistemde kayıtlı görünmüyor!'); history.back();</script>");
+    }
+
+    // 6 Haneli yeni OTP kodu
+    const dogrulamaKodu = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Kullanıcının satırına yeni geçici doğrulama kodunu yazıyoruz
+    const { error: guncellemeHatasi } = await supabase
+        .from('kullanicilar')
+        .update({ dogrulama_kodu: dogrulamaKodu })
+        .eq('email', temizEmail);
+
+    if (guncellemeHatasi) return res.status(500).send("Veritabanı Hatası: " + guncellemeHatasi.message);
+
+    // Sıfırlama maili gönderimi
+    try {
+        await transporter.sendMail({
+            from: 'cinarcikofficial@gmail.com',
+            to: temizEmail,
+            subject: '🔒 Verytech Şifre Sıfırlama Onay Kodu',
+            html: `<h3>Verytech Garanti Takip Sistemi</h3><p>Şifrenizi güvenli bir şekilde sıfırlamak için kullanacağınız tek kullanımlık onay kodu aşağıdadır:</p><h2 style="color:#f59e0b; letter-spacing:4px;">${dogrulamaKodu}</h2><p>Eğer bu talebi siz yapmadıysanız bu maili dikkate almayınız.</p>`
+        });
+        
+        // Zaten hazır olan kod onay sayfasına yönlendiriyoruz
+        res.redirect(`/kod-onayla?email=${encodeURIComponent(temizEmail)}`);
+    } catch (mailErr) {
+        res.send("<script>alert('Mail gönderme hatası oluştu: " + mailErr.message + "'); history.back();</script>");
+    }
+});
+
+// YENİ KULLANICI KAYIT EKRANI
 app.get('/kayit-ol', (req, res) => {
     res.send(`
     <!DOCTYPE html>
@@ -140,7 +222,6 @@ app.get('/kayit-ol', (req, res) => {
     </html>`);
 });
 
-// KAYIT İŞLEMİ VE KOD ÜRETİP MAİL ATMA
 app.post('/kayit-ol', async (req, res) => {
     const { email } = req.body;
     const temizEmail = (email || "").trim().toLowerCase();
@@ -149,11 +230,9 @@ app.post('/kayit-ol', async (req, res) => {
         return res.send("<script>alert('Sadece @verytech.com.tr uzantılı e-postalar kayıt olabilir!'); history.back();</script>");
     }
 
-    // 6 Haneli rastgele OTP kodu oluşturma
     const dogrulamaKodu = Math.floor(100000 + Math.random() * 900000).toString();
     const userId = Date.now().toString();
 
-    // Önce bu maille daha önce kayıt açılmış mı bak, varsa eskisini güncelle yoksa yeni aç
     const { data: mevcut } = await supabase.from('kullanicilar').select('*').eq('email', temizEmail).single();
 
     let dbError;
@@ -167,7 +246,6 @@ app.post('/kayit-ol', async (req, res) => {
 
     if (dbError) return res.status(500).send("Veritabanı Hatası: " + dbError.message);
 
-    // Mail Gönderimi
     try {
         await transporter.sendMail({
             from: 'cinarcikofficial@gmail.com',
@@ -175,15 +253,13 @@ app.post('/kayit-ol', async (req, res) => {
             subject: '🔑 Verytech Sistem Giriş Onay Kodu',
             html: `<h3>Verytech Garanti Takip Sistemi</h3><p>Sisteme kayıt olabilmek veya şifrenizi yenilemek için kullanacağınız tek kullanımlık onay kodu aşağıdadır:</p><h2 style="color:#0284c7; letter-spacing:4px;">${dogrulamaKodu}</h2><p>Bu kodu kimseyle paylaşmayınız.</p>`
         });
-        
-        // Kod onay ekranına yönlendir, mail bilgisini de query ile taşıyalım
         res.redirect(`/kod-onayla?email=${encodeURIComponent(temizEmail)}`);
     } catch (mailErr) {
         res.send("<script>alert('Mail gönderme hatası oluştu: " + mailErr.message + "'); history.back();</script>");
     }
 });
 
-// 🆕 KOD ONAY EKRANI
+// KOD ONAY EKRANI
 app.get('/kod-onayla', (req, res) => {
     const { email } = req.query;
     res.send(`
@@ -215,7 +291,6 @@ app.get('/kod-onayla', (req, res) => {
     </html>`);
 });
 
-// KOD KONTROLÜ
 app.post('/kod-onayla', async (req, res) => {
     const { email, kod } = req.body;
     
@@ -229,11 +304,10 @@ app.post('/kod-onayla', async (req, res) => {
         return res.send("<script>alert('Girdiğiniz onay kodu hatalı!'); history.back();</script>");
     }
 
-    // Kod doğru, şifre belirleme ekranına gönder
     res.redirect(`/sifre-belirle?email=${encodeURIComponent(email)}&token=${kod}`);
 });
 
-// 🆕 YENİ ŞİFRE BELİRLEME EKRANI
+// YENİ ŞİFRE BELİRLEME EKRANI
 app.get('/sifre-belirle', (req, res) => {
     const { email, token } = req.query;
     res.send(`
@@ -267,18 +341,15 @@ app.get('/sifre-belirle', (req, res) => {
     </html>`);
 });
 
-// ŞİFREYİ KAYDETME VE AKTİFLEŞTİRME
 app.post('/sifre-belirle', async (req, res) => {
     const { email, token, password } = req.body;
 
-    // Token/kod eşleşmesini güvenlik için bir kez daha doğrulayalım
     const { data: user } = await supabase.from('kullanicilar').select('*').eq('email', email).single();
 
     if (!user || user.dogrulama_kodu !== token) {
         return res.send("<script>alert('Güvenlik doğrulaması başarısız!'); window.location.href='/';</script>");
     }
 
-    // Şifreyi güncelle, aktif_mi durumunu true yap ve doğrulama kodunu sıfırla (tekrar kullanılamasın)
     const { error } = await supabase
         .from('kullanicilar')
         .update({ sifre: password, aktif_mi: true, dogrulama_kodu: null })
@@ -286,12 +357,11 @@ app.post('/sifre-belirle', async (req, res) => {
 
     if (error) return res.status(500).send("Şifre Kayıt Hatası: " + error.message);
 
-    // Oturumu otomatik açıp dashboard'a yolla
     req.session.userId = user.id;
     const isimParçası = email.split('@')[0]; 
     req.session.userName = isimParçası.charAt(0).toUpperCase() + isimParçası.slice(1); 
 
-    res.send("<script>alert('Şifreniz başarıyla oluşturuldu! Sisteme giriş yapılıyor...'); window.location.href='/dashboard';</script>");
+    res.send("<script>alert('Şifreniz başarıyla güncellendi! Sisteme giriş yapılıyor...'); window.location.href='/dashboard';</script>");
 });
 
 app.get('/logout', (req, res) => {
@@ -299,7 +369,7 @@ app.get('/logout', (req, res) => {
     res.redirect('/');
 });
 
-// 5. PANELE GİRİŞ (DASHBOARD)
+// [BURADAN SONRASI DEĞİŞMEDİ: /dashboard, /detay, /urun-ekle vb. rotaları aynen devam ediyor...]
 app.get('/dashboard', async (req, res) => {
     if (!req.session.userId) return res.redirect('/');
     
@@ -572,7 +642,6 @@ app.get('/dashboard', async (req, res) => {
     </html>`);
 });
 
-// 6. DETAY SAYFASI
 app.get('/detay', async (req, res) => {
     if (!req.session.userId) return res.redirect('/');
     
@@ -677,7 +746,6 @@ app.get('/detay', async (req, res) => {
     </html>`);
 });
 
-// 7. YENİ ÜRÜN EKLEME
 app.post('/urun-ekle', async (req, res) => {
     if (!req.session.userId) return res.redirect('/');
 
@@ -719,7 +787,6 @@ app.post('/urun-ekle', async (req, res) => {
     res.redirect('/dashboard');
 });
 
-// 8. ÜRÜN DÜZENLEME
 app.post('/urun-duzenle', async (req, res) => {
     if (!req.session.userId) return res.redirect('/');
     
@@ -741,7 +808,6 @@ app.post('/urun-duzenle', async (req, res) => {
     res.redirect('/dashboard');
 });
 
-// 9. ÜRÜN SİLME
 app.get('/urun-sil/:id', async (req, res) => {
     if (!req.session.userId) return res.redirect('/');
     const id = req.params.id;
@@ -755,7 +821,6 @@ app.get('/urun-sil/:id', async (req, res) => {
     res.redirect('/dashboard');
 });
 
-// 10. CRON JOB - OTOMATİK MAİL TETİKLEME ROTASI
 app.get('/api/cron/garanti-kontrol', async (req, res) => {
     const authHeader = req.headers.authorization;
     if (process.env.NODE_ENV === 'production' && process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -800,7 +865,6 @@ app.get('/api/cron/garanti-kontrol', async (req, res) => {
     }
 });
 
-// VERCEL SUNUCU AYARI
 const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => {
