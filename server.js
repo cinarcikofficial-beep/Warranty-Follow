@@ -7,6 +7,7 @@ const app = express();
 const supabaseUrl = process.env.SUPABASE_URL || 'https://ravamzdhieateguwcofd.supabase.co';
 const supabaseKey = process.env.SUPABASE_ANON_KEY || 'sb_publishable_HB3Y0BHBJuFar1v8UY0ZbQ_7R0Iv7c8';
 
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // 2. MIDDLEWARE VE OTURUM AYARLARI
@@ -109,12 +110,10 @@ app.get('/dashboard', async (req, res) => {
         mevcutMarkaSecenekleri += `<option value="${marka}">${marka}</option>`;
     });
 
-    // 🌟 SÜTUN UYUMSUZLUĞUNU ÇÖZEN ARKA PLAN MANTIĞI 🌟
+    // 🛠️ MÜŞTERİ SATIRLARI (Boşsa DataTables kendisi Türkçe uyarı basacak)
     let musteriSatirlari = "";
     const musteriListesi = Object.keys(musteriMap);
-    if (musteriListesi.length === 0) {
-        musteriSatirlari = `<tr><td colspan="4" class="text-center text-muted py-3">Henüz kayıtlı müşteri yok.</td></tr>`;
-    } else {
+    if (musteriListesi.length > 0) {
         musteriListesi.forEach((m, idx) => {
             musteriSatirlari += `
             <tr>
@@ -128,10 +127,9 @@ app.get('/dashboard', async (req, res) => {
         });
     }
 
+    // 🛠️ ÜRÜN SATIRLARI (Boşsa DataTables kendisi Türkçe uyarı basacak)
     let urunSatirlari = "";
-    if (tumUrunler.length === 0) {
-        urunSatirlari = `<tr><td colspan="8" class="text-center text-muted py-3">Henüz sisteme girilmiş ürün bulunmamaktadır.</td></tr>`;
-    } else {
+    if (tumUrunler && tumUrunler.length > 0) {
         tumUrunler.forEach((urun) => {
             const bitisTarihi = new Date(urun.garanti_bitis);
             const t1 = Date.UTC(bugun.getFullYear(), bugun.getMonth(), bugun.getDate());
@@ -198,7 +196,7 @@ app.get('/dashboard', async (req, res) => {
         <title>Verytech - Yönetim Paneli</title>
         <style>
             body { background-color: #f1f5f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-            th { cursor: pointer; font-weight: 600; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
+            th { font-weight: 600; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
             .dataTables_filter { margin-bottom: 15px; }
             
             .card-custom-green { border: 1px solid #cbf3d6; border-left: 6px solid #10b981; box-shadow: 0 4px 15px rgba(16,185,129,0.06); background-color: #f0fdf4; border-radius: 12px; }
