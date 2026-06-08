@@ -4,10 +4,9 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 
 // 1. SUPABASE BAĞLANTISI
-// Yerelde çalışırken bu URL ve KEY'leri buraya yazabilirsin. 
-// Vercel'e yüklediğinde ise bunları Vercel Environment Variables (Çevre Değişkenleri) olarak ekleyeceğiz.
 const supabaseUrl = process.env.SUPABASE_URL || 'https://ravamzdhieateguwcofd.supabase.co';
 const supabaseKey = process.env.SUPABASE_ANON_KEY || 'sb_publishable_HB3Y0BHBJuFar1v8UY0ZbQ_7R0Iv7c8';
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // 2. MIDDLEWARE VE OTURUM AYARLARI
@@ -18,10 +17,9 @@ app.use(session({
     secret: 'verytech_gizli_anahtar_123',
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false } // Vercel'de standart HTTP/HTTPS uyumu için false kalabilir
+    cookie: { secure: false }
 }));
 
-// Statik dosyalar için (Logonuz vb. için)
 app.use(express.static('public'));
 
 // 3. GİRİŞ SAYFASI (LOGIN)
@@ -60,10 +58,8 @@ app.get('/', (req, res) => {
     </html>`);
 });
 
-// GİRİŞ POST İŞLEMİ
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
-    // Sabit kullanıcı adı ve şifre koruması (İsteğe göre değiştirebilirsin)
     if (username === 'admin' && password === 'verytech123') {
         req.session.userId = '1';
         req.session.userName = 'Verytech Yönetici';
@@ -72,19 +68,18 @@ app.post('/login', (req, res) => {
     res.send("<script>alert('Hatalı kullanıcı adı veya şifre!'); window.location.href='/';</script>");
 });
 
-// ÇIKIŞ İŞLEMİ
 app.get('/logout', (req, res) => {
     req.session.destroy();
     res.redirect('/');
 });
 
-// 4. PANELE GİRİŞ (DASHBOARD) - SUPABASE ENTEGRELİ SÜRÜM
+// 4. PANELE GİRİŞ (DASHBOARD)
 app.get('/dashboard', async (req, res) => {
     if (!req.session.userId) return res.redirect('/');
     
     const bugun = new Date();
 
-    // 🌟 JSON dosyasından okumak yerine verileri Supabase'den çekiyoruz
+    // Verileri Supabase'den çekiyoruz
     const { data: tumUrunler, error } = await supabase
         .from('urunler')
         .select('*')
@@ -94,7 +89,6 @@ app.get('/dashboard', async (req, res) => {
         return res.status(500).send("Veritabanı hatası: " + error.message);
     }
 
-    // Müşteri ve Marka Listelerini Toplama Mantığı
     const musteriMap = {};
     const memorandaMarka = new Set();
     
@@ -115,11 +109,12 @@ app.get('/dashboard', async (req, res) => {
         mevcutMarkaSecenekleri += `<option value="${marka}">${marka}</option>`;
     });
 
+    // 🌟 SÜTUN UYUMSUZLUĞUNU ÇÖZEN ARKA PLAN MANTIĞI 🌟
     let musteriSatirlari = "";
     const musteriListesi = Object.keys(musteriMap);
     if (musteriListesi.length === 0) {
-    musteriSatirlari = `<tr><td colspan="4" class="text-center text-muted py-3">Henüz kayıtlı müşteri yok.</td></tr>`;
-}else {
+        musteriSatirlari = `<tr><td colspan="4" class="text-center text-muted py-3">Henüz kayıtlı müşteri yok.</td></tr>`;
+    } else {
         musteriListesi.forEach((m, idx) => {
             musteriSatirlari += `
             <tr>
@@ -308,7 +303,14 @@ app.get('/dashboard', async (req, res) => {
             <h5 class="fw-bold mb-4" style="color: #0284c7;">🔵 Kayıtlı Müşteri Özet Listesi</h5>
             <div class="table-responsive">
                 <table id="musteriTablosu" class="table align-middle table-hover w-100 m-0">
-                    <thead class="table-light"><tr><th>No</th><th>Şirket Adı</th><th>Toplam Ürün Miktarı</th><th class="text-end">İşlem</th></tr></thead>
+                    <thead class="table-light">
+                        <tr>
+                            <th>No</th>
+                            <th>Şirket Adı</th>
+                            <th>Toplam Ürün Miktarı</th>
+                            <th class="text-end">İşlem</th>
+                        </tr>
+                    </thead>
                     <tbody>${musteriSatirlari}</tbody>
                 </table>
             </div>
@@ -435,7 +437,7 @@ app.get('/dashboard', async (req, res) => {
     </html>`);
 });
 
-// 5. YENİ ÜRÜN EKLEME (SUPABASE ENTEGRELİ)
+// 5. YENİ ÜRÜN EKLEME
 app.post('/urun-ekle', async (req, res) => {
     if (!req.session.userId) return res.redirect('/');
 
@@ -459,7 +461,6 @@ app.post('/urun-ekle', async (req, res) => {
         return res.send("<script>alert('Lütfen gerekli alanları doldurun!'); history.back();</script>");
     }
 
-    // Supabase'e Satır Ekleme
     const { error } = await supabase
         .from('urunler')
         .insert([
@@ -478,7 +479,7 @@ app.post('/urun-ekle', async (req, res) => {
     res.redirect('/dashboard');
 });
 
-// 6. ÜRÜN DÜZENLEME (SUPABASE ENTEGRELİ)
+// 6. ÜRÜN DÜZENLEME
 app.post('/urun-duzenle', async (req, res) => {
     if (!req.session.userId) return res.redirect('/');
     
@@ -500,7 +501,7 @@ app.post('/urun-duzenle', async (req, res) => {
     res.redirect('/dashboard');
 });
 
-// 7. ÜRÜN SİLME (SUPABASE ENTEGRELİ)
+// 7. ÜRÜN SİLME
 app.get('/urun-sil/:id', async (req, res) => {
     if (!req.session.userId) return res.redirect('/');
     const id = req.params.id;
@@ -514,7 +515,7 @@ app.get('/urun-sil/:id', async (req, res) => {
     res.redirect('/dashboard');
 });
 
-// 8. VERCEL UYUMLU SUNUCU AYAĞA KALDIRMA MANTIĞI
+// 8. VERCEL SUNUCU AYARI
 const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => {
@@ -522,5 +523,4 @@ if (process.env.NODE_ENV !== 'production') {
     });
 }
 
-module.exports = app; // Vercel için kritik satır
-
+module.exports = app;
