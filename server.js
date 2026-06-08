@@ -1,13 +1,12 @@
 const express = require('express');
 const session = require('express-session');
 const { createClient } = require('@supabase/supabase-js');
+const nodemailer = require('nodemailer');
 const app = express();
 
 // 1. SUPABASE BAĞLANTISI
 const supabaseUrl = process.env.SUPABASE_URL || 'https://ravamzdhieateguwcofd.supabase.co';
 const supabaseKey = process.env.SUPABASE_ANON_KEY || 'sb_publishable_HB3Y0BHBJuFar1v8UY0ZbQ_7R0Iv7c8';
-
-
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // 2. MIDDLEWARE VE OTURUM AYARLARI
@@ -23,7 +22,18 @@ app.use(session({
 
 app.use(express.static('public'));
 
-// 3. GİRİŞ SAYFASI (LOGIN)
+// 3. HAZIR GMAIL SMTP ENTEGRASYONU (GÜNCELLENDİ 🚀)
+const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // 465 portu SSL için true olmalı
+    auth: {
+        user: 'cinarcikofficial@gmail.com',
+        pass: 'twwm cine falf uttx' // Sağladığınız Uygulama Şifresi
+    }
+});
+
+// 4. GİRİŞ SAYFASI (LOGIN)
 app.get('/', (req, res) => {
     if (req.session.userId) return res.redirect('/dashboard');
     res.send(`
@@ -74,13 +84,12 @@ app.get('/logout', (req, res) => {
     res.redirect('/');
 });
 
-// 4. PANELE GİRİŞ (DASHBOARD)
+// 5. PANELE GİRİŞ (DASHBOARD)
 app.get('/dashboard', async (req, res) => {
     if (!req.session.userId) return res.redirect('/');
     
     const bugun = new Date();
 
-    // Verileri Supabase'den çekiyoruz
     const { data: tumUrunler, error } = await supabase
         .from('urunler')
         .select('*')
@@ -110,7 +119,6 @@ app.get('/dashboard', async (req, res) => {
         mevcutMarkaSecenekleri += `<option value="${marka}">${marka}</option>`;
     });
 
-    // 🛠️ MÜŞTERİ SATIRLARI (Boşsa DataTables kendisi Türkçe uyarı basacak)
     let musteriSatirlari = "";
     const musteriListesi = Object.keys(musteriMap);
     if (musteriListesi.length > 0) {
@@ -127,7 +135,6 @@ app.get('/dashboard', async (req, res) => {
         });
     }
 
-    // 🛠️ ÜRÜN SATIRLARI (Boşsa DataTables kendisi Türkçe uyarı basacak)
     let urunSatirlari = "";
     if (tumUrunler && tumUrunler.length > 0) {
         tumUrunler.forEach((urun) => {
@@ -435,7 +442,7 @@ app.get('/dashboard', async (req, res) => {
     </html>`);
 });
 
-// 5. YENİ ÜRÜN EKLEME
+// 6. YENİ ÜRÜN EKLEME
 app.post('/urun-ekle', async (req, res) => {
     if (!req.session.userId) return res.redirect('/');
 
@@ -477,7 +484,7 @@ app.post('/urun-ekle', async (req, res) => {
     res.redirect('/dashboard');
 });
 
-// 6. ÜRÜN DÜZENLEME
+// 7. ÜRÜN DÜZENLEME
 app.post('/urun-duzenle', async (req, res) => {
     if (!req.session.userId) return res.redirect('/');
     
@@ -499,7 +506,7 @@ app.post('/urun-duzenle', async (req, res) => {
     res.redirect('/dashboard');
 });
 
-// 7. ÜRÜN SİLME
+// 8. ÜRÜN SİLME
 app.get('/urun-sil/:id', async (req, res) => {
     if (!req.session.userId) return res.redirect('/');
     const id = req.params.id;
@@ -513,7 +520,56 @@ app.get('/urun-sil/:id', async (req, res) => {
     res.redirect('/dashboard');
 });
 
-// 8. VERCEL SUNUCU AYARI
+// 🌟 BÖLÜM 9: CRON JOB - OTOMATİK MAİL TETİKLEME ROTASI 🌟
+app.get('/api/cron/garanti-kontrol', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        return res.status(401).json({ success: false, message: 'Yetkisiz erişim.' });
+    }
+
+    try {
+        const bugun = new Date();
+        const { data: tumUrunler, error } = await supabase.from('urunler').select('*');
+
+        if (error) throw error;
+
+        let mailIcerik = `<h3>Verytech Garanti ve Bakım Raporu</h3><p>Merhaba, sistem taraması sonucunda durumları kritik olan cihaz listesi aşağıdadır:</p><table border="1" cellpadding="8" style="border-collapse:collapse;"><thead><tr style="background:#f1f5f9;"><th>Müşteri</th><th>Marka/Ürün</th><th>Seri No</th><th>Bitiş Tarihi</th><th>Kalan Gün</th></tr></thead><tbody>`;
+        let mailGonderilecekMi = false;
+
+        tumUrunler.forEach((urun) => {
+            const bitisTarihi = new Date(urun.garanti_bitis);
+            const t1 = Date.UTC(bugun.getFullYear(), bugun.getMonth(), bugun.getDate());
+            const t2 = Date.UTC(bitisTarihi.getFullYear(), bitisTarihi.getMonth(), bitisTarihi.getDate());
+            const kalanGun = Math.floor((t2 - t1) / (1000 * 60 * 60 * 24));
+
+            // Tam 60 gün kalanlar (1 kez) veya 30 gün ve daha az kalanlar (her gün)
+            if (kalanGun === 60 || kalanGun <= 30) {
+                mailGonderilecekMi = true;
+                let durumRengi = kalanGun < 0 ? "red" : (kalanGun <= 30 ? "orange" : "blue");
+                mailIcerik += `<tr><td><b>${urun.musteri_adi}</b></td><td>${urun.marka} - ${urun.urun_adi}</td><td><code>${urun.seri_no}</code></td><td>${urun.garanti_bitis}</td><td style="color:${durumRengi}; font-weight:bold;">${kalanGun < 0 ? 'Süresi Doldu' : kalanGun + ' Gün'}</td></tr>`;
+            }
+        });
+
+        mailIcerik += `</tbody></table><br><p>Sisteme erişmek için Vercel panelinizi kullanabilirsiniz.</p>`;
+
+        if (mailGonderilecekMi) {
+            await transporter.sendMail({
+                from: 'cinarcikofficial@gmail.com',
+                to: 'kerim.kaplan@verytech.com.tr',
+                subject: '🚨 Verytech Garanti ve Bakım Bildirimi',
+                html: mailIcerik
+            });
+            return res.json({ success: true, message: 'Kritik durumlar tespit edildi ve mail gönderildi.' });
+        }
+
+        return res.json({ success: true, message: 'Kritik durumda ürün bulunamadı, mail atılmadı.' });
+
+    } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 10. VERCEL SUNUCU AYARI
 const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => {
