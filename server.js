@@ -24,7 +24,7 @@ app.use(session({
 app.use(express.static('public'));
 
 // 🚀 YENİ LOKAL LOGO DEĞİŞKENİ (Artık internete bağımlı değil, public klasöründen okur)
-const logoUrl = "/verytech-beyaz.png";
+const logoUrl = "/verytech_beyaz.png";
 
 // 3. HAZIR GMAIL SMTP ENTEGRASYONU
 const transporter = nodemailer.createTransport({
