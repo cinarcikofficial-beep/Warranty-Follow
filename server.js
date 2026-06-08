@@ -87,7 +87,7 @@ app.get('/', (req, res) => {
     </html>`);
 });
 
-// GİRİŞ KONTROLÜ (Veritabanından Doğrulama)
+// GİRİŞ KONTROLÜ
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     const temizEmail = (email || "").trim().toLowerCase();
@@ -109,7 +109,7 @@ app.post('/login', async (req, res) => {
     res.redirect('/dashboard');
 });
 
-// 🆕 ŞİFREMİ UNUTTUM EKRANI
+// ŞİFREMİ UNUTTUM EKRANI
 app.get('/sifremi-unuttum', (req, res) => {
     res.send(`
     <!DOCTYPE html>
@@ -151,7 +151,6 @@ app.post('/sifremi-unuttum', async (req, res) => {
         return res.send("<script>alert('Sadece @verytech.com.tr uzantılı e-postalar işlem yapabilir!'); history.back();</script>");
     }
 
-    // Sistemde bu kullanıcı gerçekten kayıtlı mı kontrol ediyoruz
     const { data: mevcut, error: bulmaHatasi } = await supabase
         .from('kullanicilar')
         .select('*')
@@ -162,10 +161,8 @@ app.post('/sifremi-unuttum', async (req, res) => {
         return res.send("<script>alert('Bu e-posta adresi sistemde kayıtlı görünmüyor!'); history.back();</script>");
     }
 
-    // 6 Haneli yeni OTP kodu
     const dogrulamaKodu = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Kullanıcının satırına yeni geçici doğrulama kodunu yazıyoruz
     const { error: guncellemeHatasi } = await supabase
         .from('kullanicilar')
         .update({ dogrulama_kodu: dogrulamaKodu })
@@ -173,16 +170,15 @@ app.post('/sifremi-unuttum', async (req, res) => {
 
     if (guncellemeHatasi) return res.status(500).send("Veritabanı Hatası: " + guncellemeHatasi.message);
 
-    // Sıfırlama maili gönderimi
     try {
+        // ✨ GÖNDEREN İSMİ GÜNCELLENDİ
         await transporter.sendMail({
-            from: 'cinarcikofficial@gmail.com',
+            from: '"Verytech Garanti Takip Sistemi" <cinarcikofficial@gmail.com>',
             to: temizEmail,
             subject: '🔒 Verytech Şifre Sıfırlama Onay Kodu',
             html: `<h3>Verytech Garanti Takip Sistemi</h3><p>Şifrenizi güvenli bir şekilde sıfırlamak için kullanacağınız tek kullanımlık onay kodu aşağıdadır:</p><h2 style="color:#f59e0b; letter-spacing:4px;">${dogrulamaKodu}</h2><p>Eğer bu talebi siz yapmadıysanız bu maili dikkate almayınız.</p>`
         });
         
-        // Zaten hazır olan kod onay sayfasına yönlendiriyoruz
         res.redirect(`/kod-onayla?email=${encodeURIComponent(temizEmail)}`);
     } catch (mailErr) {
         res.send("<script>alert('Mail gönderme hatası oluştu: " + mailErr.message + "'); history.back();</script>");
@@ -247,8 +243,9 @@ app.post('/kayit-ol', async (req, res) => {
     if (dbError) return res.status(500).send("Veritabanı Hatası: " + dbError.message);
 
     try {
+        // ✨ GÖNDEREN İSMİ GÜNCELLENDİ
         await transporter.sendMail({
-            from: 'cinarcikofficial@gmail.com',
+            from: '"Verytech Garanti Takip Sistemi" <cinarcikofficial@gmail.com>',
             to: temizEmail,
             subject: '🔑 Verytech Sistem Giriş Onay Kodu',
             html: `<h3>Verytech Garanti Takip Sistemi</h3><p>Sisteme kayıt olabilmek veya şifrenizi yenilemek için kullanacağınız tek kullanımlık onay kodu aşağıdadır:</p><h2 style="color:#0284c7; letter-spacing:4px;">${dogrulamaKodu}</h2><p>Bu kodu kimseyle paylaşmayınız.</p>`
@@ -369,7 +366,7 @@ app.get('/logout', (req, res) => {
     res.redirect('/');
 });
 
-// [BURADAN SONRASI DEĞİŞMEDİ: /dashboard, /detay, /urun-ekle vb. rotaları aynen devam ediyor...]
+// DASHBOARD EKRANI
 app.get('/dashboard', async (req, res) => {
     if (!req.session.userId) return res.redirect('/');
     
@@ -642,6 +639,7 @@ app.get('/dashboard', async (req, res) => {
     </html>`);
 });
 
+// FILTRE DETAY SAYFASI
 app.get('/detay', async (req, res) => {
     if (!req.session.userId) return res.redirect('/');
     
@@ -821,6 +819,7 @@ app.get('/urun-sil/:id', async (req, res) => {
     res.redirect('/dashboard');
 });
 
+// CRON OTOMASYON RAPORU RROTASI
 app.get('/api/cron/garanti-kontrol', async (req, res) => {
     const authHeader = req.headers.authorization;
     if (process.env.NODE_ENV === 'production' && process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -851,8 +850,9 @@ app.get('/api/cron/garanti-kontrol', async (req, res) => {
         mailIcerik += `</tbody></table><br><p>Sisteme erişmek için Vercel panelinizi kullanabilirsiniz.</p>`;
 
         if (mailGonderilecekMi) {
+            // ✨ GÖNDEREN İSMİ GÜNCELLENDİ
             await transporter.sendMail({
-                from: 'cinarcikofficial@gmail.com',
+                from: '"Verytech Garanti Takip Sistemi" <cinarcikofficial@gmail.com>',
                 to: 'kerim.kaplan@verytech.com.tr',
                 subject: '🚨 Verytech Garanti ve Bakım Bildirimi',
                 html: mailIcerik
