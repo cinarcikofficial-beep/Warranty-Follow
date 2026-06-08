@@ -3,6 +3,7 @@ const session = require('express-session');
 const { createClient } = require('@supabase/supabase-js');
 const nodemailer = require('nodemailer');
 const app = express();
+const logoUrl = "/verytech-beyaz.png";
 
 // 1. SUPABASE BAĞLANTISI
 const supabaseUrl = process.env.SUPABASE_URL || 'https://ravamzdhieateguwcofd.supabase.co';
