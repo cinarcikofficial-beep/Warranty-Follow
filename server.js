@@ -821,6 +821,33 @@ app.get('/urun-sil/:id', oturumKontrolu, async (req, res) => {
 
 // CRON OTOMASYON RAPORU ROTASI
 app.get('/api/cron/garanti-kontrol', async (req, res) => {
+    
+    // Vercel Cron Job güvenliği için mevcut authHeader kontrolün varsa burada kalabilir.
+
+    try {
+        console.log("[CRON TEMİZLİK] Aktifleşmemiş pasif hesapların temizliği başlatılıyor...");
+
+        // 1. Şimdiki zamandan 5 dakika öncesini hesapla (created_at ile kıyaslamak için)
+        const besDakikaOnce = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+
+        // 2. Supabase'den: created_at tarihi 5 dakikadan ESKİ olan VE aktif_mi değeri FALSE olanları sil
+        const { data: silinenler, error: temizlikHatasi } = await supabase
+            .from('kullanicilar')
+            .delete()
+            .lt('created_at', besDakikaOnce) // 5 dakikadan daha önce oluşturulmuş
+            .eq('aktif_mi', false);          // Ve hala onaylanmamış/aktif edilmemiş
+
+        if (temizlikHatasi) {
+            console.error("[CRON TEMİZLİK HATASI]:", temizlikHatasi);
+        } else {
+            console.log("[CRON TEMİZLİK] 5 dakikayı geçen aktifleşmemiş kullanıcılar başarıyla temizlendi.");
+        }
+
+    } catch (err) {
+        console.error("[CRON TEMİZLİK] Beklenmedik bir hata oluştu:", err);
+    }
+    
+    
     const authHeader = req.headers.authorization;
     if (process.env.NODE_ENV === 'production' && process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
         return res.status(401).json({ success: false, message: 'Yetkisiz erişim.' });
