@@ -560,15 +560,21 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
 
         <div class="card card-custom-blue p-4 mb-4">
             <h5 class="fw-bold mb-4" style="color: #0284c7;">🔵 Kayıtlı Müşteri Özet Listesi</h5>
-            <div class="musteri-sayfalama-alani" style="margin-bottom: 15px; font-family: sans-serif; font-size: 14px;">
-    <label for="musteriSayfaAdet">Sayfada </label>
-    <select id="musteriSayfaAdet" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
-        <option value="5" selected>5</option>
-        <option value="10">10</option>
-        <option value="25">25</option>
-        <option value="50">50</option>
-    </select>
-    <span> kayıt göster</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
+    <div style="font-family: sans-serif; font-size: 14px; color: #475569;">
+        <label for="musteriSayfaAdet">Sayfada </label>
+        <select id="musteriSayfaAdet" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background-color: #fff; font-weight: 500; cursor: pointer;">
+            <option value="5" selected>5</option>
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+        </select>
+        <span> kayıt göster</span>
+    </div>
+
+    <div>
+        <input type="text" id="musteriAraInput" placeholder="Müşteri Ara..." style="padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; width: 200px;">
+    </div>
 </div>
             <div class="table-responsive">
                 <table id="musteriTablosu" class="table align-middle table-hover w-100 m-0">
@@ -612,6 +618,83 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
     </div>
 
     <script>
+
+
+    // Global Sayfalama Değişkenleri
+let m_MevcutSayfa = 1;
+let m_SayfaBasinaKayit = 5; // Varsayılan değer
+
+document.addEventListener('DOMContentLoaded', () => {
+    const mSelect = document.getElementById('musteriSayfaAdet');
+    const mAraInput = document.getElementById('musteriAraInput');
+
+    // 1. Dropdown değiştiğinde tetiklenecek olay
+    if (mSelect) {
+        mSelect.addEventListener('change', (e) => {
+            m_SayfaBasinaKayit = parseInt(e.target.value);
+            m_MevcutSayfa = 1; // Limit değişirse her zaman 1. sayfaya sıfırla
+            musteriListesiniYenile(); // Tabloyu güncelle
+        });
+    }
+
+    // 2. Arama kutusuna bir şey yazıldığında tetiklenecek olay (İsteğe bağlı/Entegre)
+    if (mAraInput) {
+        mAraInput.addEventListener('input', () => {
+            m_MevcutSayfa = 1;
+            musteriListesiniYenile();
+        });
+    }
+
+    // İlk açılışta verileri getir
+    musteriListesiniYenile();
+});
+
+// Backend'den (server.js) Dinamik Sayfalama Verisi Çeken Fonksiyon
+async function musteriListesiniYenile() {
+    try {
+        const aramaKelimesi = document.getElementById('musteriAraInput')?.value || '';
+        
+        // Yenilediğimiz server.js endpoint'ine sayfa ve limit parametrelerini gönderiyoruz
+        const response = await fetch(`/api/kullanicilar?sayfa=${m_MevcutSayfa}&limit=${m_SayfaBasinaKayit}&ara=${aramaKelimesi}`);
+        const result = await response.json();
+
+        if (!result.success) {
+            console.error("Müşteriler yüklenirken backend hatası:", result.error);
+            return;
+        }
+
+        const musteriler = result.data;
+        const tabloGovde = document.getElementById('musteriTabloGovdesi'); // tbody ID'si
+        
+        if (!tabloGovde) return;
+        tabloGovde.innerHTML = '';
+
+        if (!musteriler || musteriler.length === 0) {
+            tabloGovde.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#64748b; padding:15px;">Kayıtlı müşteri bulunamadı.</td></tr>`;
+            return;
+        }
+
+        // Sıra numarasının sonraki sayfalarda (6, 7, 8..) doğru devam etmesi için başlangıç ofsetini hesapla
+        const baslangicOfseti = (m_MevcutSayfa - 1) * m_SayfaBasinaKayit;
+
+        musteriler.forEach((musteri, index) => {
+            const siraNo = baslangicOfseti + index + 1;
+            const sirketAdi = musteri.sirket_adi || musteri.username || "Bilinmeyen Şirket";
+            const urunSayisi = musteri.toplam_urun || 0;
+
+            tabloGovde.innerHTML += `
+                <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${siraNo}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">🏢 <b>${sirketAdi}</b></td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><span class="badge" style="background-color: #e0e7ff; color: #4338ca; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">${urunSayisi} Adet Ürün</span></td>
+                </tr>
+            `;
+        });
+
+    } catch (err) {
+        console.error("Müşteri listesi güncellenirken tarayıcı hatası oluştu:", err);
+    }
+}
         function musteriFormuDegistir() {
             if (document.getElementById('tipMevcut').checked) {
                 document.getElementById('mevcutMusteriAlani').style.display = 'block';
