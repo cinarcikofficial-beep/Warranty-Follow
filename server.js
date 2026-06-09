@@ -846,8 +846,17 @@ app.get('/api/cron/garanti-kontrol', async (req, res) => {
                 mailIcerik += `<tr><td><b>${urun.musteri_adi}</b></td><td>${urun.marka} - ${urun.urun_adi}</td><td><code>${urun.seri_no}</code></td><td>${tarihFormatla(urun.garanti_bitis)}</td><td style="color:${durumRengi}; font-weight:bold;">${kalanGun < 0 ? 'Süresi Doldu' : kalanGun + ' Gün'}</td></tr>`;
             }
         });
-
-        mailIcerik += `</tbody></table><br><p>Sisteme erişmek için Vercel panelinizi kullanabilirsiniz.</p>`;
+// ... (Tablonun bittiği yerdeki kod bloğu)
+        mailIcerik += `</tbody></table><br>
+        <p>Sisteme hızlıca erişmek ve detayları incelemek için aşağıdaki bağlantıyı kullanabilirsiniz:</p>
+        <p style="margin-top: 15px;">
+            <a href="https://warranty-follow.vercel.app/" 
+               style="background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 6px; display: inline-block; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+               🚀 Garanti Takip Sistemine Git
+            </a>
+        </p>
+        <br>
+        <p style="font-size: 11px; color: #64748b;">Bu e-posta Verytech Otomatik Garanti ve Bakım Bildirim Sistemi tarafından üretilmiştir.</p>`;
 
         if (mailGonderilecekMi) {
             await transporter.sendMail({
@@ -856,8 +865,11 @@ app.get('/api/cron/garanti-kontrol', async (req, res) => {
                 subject: '🚨 Verytech Garanti ve Bakım Bildirimi',
                 html: mailIcerik
             });
-            return res.json({ success: true, message: 'Kritik durumlar tespit edildi, mail gönderildi.' });
-        }
+// ... (Kodun geri kalanı aynen devam ediyor)
+       
+
+
+
         return res.json({ success: true, message: 'Kritik durumda ürün bulunamadı, mail atılmadı.' });
     } catch (err) {
         return res.status(500).json({ success: false, error: err.message });
