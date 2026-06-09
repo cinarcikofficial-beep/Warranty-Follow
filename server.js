@@ -560,6 +560,16 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
 
         <div class="card card-custom-blue p-4 mb-4">
             <h5 class="fw-bold mb-4" style="color: #0284c7;">🔵 Kayıtlı Müşteri Özet Listesi</h5>
+            <div class="musteri-sayfalama-alani" style="margin-bottom: 15px; font-family: sans-serif; font-size: 14px;">
+    <label for="musteriSayfaAdet">Sayfada </label>
+    <select id="musteriSayfaAdet" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+        <option value="5" selected>5</option>
+        <option value="10">10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+    </select>
+    <span> kayıt göster</span>
+</div>
             <div class="table-responsive">
                 <table id="musteriTablosu" class="table align-middle table-hover w-100 m-0">
                     <thead class="table-light">
