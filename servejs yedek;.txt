@@ -473,8 +473,7 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
                             data-seri="${sNo}" 
                             data-musteri="${mAdi}" 
                             data-baslangic="${urun.garanti_baslangic}" 
-                            data-bitis="${urun.garanti_bitis}"
-                            data-not="${urun.note || ''}">✏️ Düzenle</button>
+                            data-bitis="${urun.garanti_bitis}">✏️ Düzenle</button>
                     <button class="btn btn-sm btn-outline-danger fw-bold j-sil" data-id="${urun.id}">🗑️ Sil</button>
                 </td>
             </tr>`;
@@ -554,13 +553,7 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
                     <div class="col-xl-1 col-md-4 col-sm-6"><label class="form-label small fw-bold text-secondary">Seri No</label><input type="text" name="seri_no" class="form-control" placeholder="Örn: SN-55" required></div>
                     <div class="col-xl-2 col-md-4 col-sm-6"><label class="form-label small fw-bold text-secondary">Garanti Başlangıç</label><input type="date" name="garanti_baslangic" class="form-control" required></div>
                     <div class="col-xl-2 col-md-4 col-sm-6"><label class="form-label small fw-bold text-secondary">Garanti Bitiş</label><input type="date" name="garanti_bitis" class="form-control" required></div>
-                    <div class="col-12 mt-4 d-flex align-items-center justify-content-between">
-                        <div class="flex-grow-1 me-3">
-                            <label class="form-label small fw-bold text-secondary">Not</label>
-                            <input type="text" name="not" class="form-control" placeholder="Not (isteğe bağlı)">
-                        </div>
-                        <button type="submit" class="btn btn-success px-5 fw-bold shadow-sm rounded-3 py-2">Sisteme Kaydet</button>
-                    </div>
+                    <div class="col-12 text-end mt-4"><button type="submit" class="btn btn-success px-5 fw-bold shadow-sm rounded-3 py-2">Sisteme Kaydet</button></div>
                 </div>
             </form>
         </div>
@@ -602,7 +595,6 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
                 <div class="mb-3"><label class="form-label fw-bold small text-secondary">Seri No</label><input type="text" name="seri_no" id="edit_seri_no" class="form-control" required></div>
                 <div class="mb-3"><label class="form-label fw-bold small text-secondary">Garanti Başlangıç</label><input type="date" name="garanti_baslangic" id="edit_garanti_baslangic" class="form-control" required></div>
                 <div class="mb-3"><label class="form-label fw-bold small text-secondary">Garanti Bitiş</label><input type="date" name="garanti_bitis" id="edit_garanti_bitis" class="form-control" required></div>
-                <div class="mb-3"><label class="form-label fw-bold small text-secondary">Not</label><input type="text" name="not" id="edit_not" class="form-control" placeholder="Not (isteğe bağlı)"></div>
           </div>
           <div class="modal-footer bg-light"><button type="button" class="btn btn-sm btn-secondary fw-bold px-3" data-bs-dismiss="modal">Vazgeç</button><button type="submit" class="btn btn-sm btn-primary fw-bold px-4">Kaydet</button></div>
         </form>
@@ -642,7 +634,6 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
                 document.getElementById('edit_seri_no').value = btn.attr('data-seri');
                 document.getElementById('edit_garanti_baslangic').value = btn.attr('data-baslangic');
                 document.getElementById('edit_garanti_bitis').value = btn.attr('data-bitis');
-                document.getElementById('edit_not').value = btn.attr('data-not');
                 new bootstrap.Modal(document.getElementById('duzenleModal')).show();
             });
             $('#genelUrunTablosu').on('click', '.j-sil', function() {
@@ -774,7 +765,6 @@ app.post('/urun-ekle', oturumKontrolu, async (req, res) => {
     }
 
     const { urun_adi, seri_no, garanti_baslangic, garanti_bitis } = req.body;
-    const notAlani = req.body['not'] || '';
 
     if (!musteriAdi || !urun_adi) {
         return res.send("<script>alert('Lütfen gerekli alanları doldurun!'); history.back();</script>");
@@ -790,8 +780,7 @@ app.post('/urun-ekle', oturumKontrolu, async (req, res) => {
                 urun_adi: urun_adi, 
                 seri_no: seri_no, 
                 garanti_baslangic: garanti_baslangic, 
-                garanti_bitis: garanti_bitis,
-                note: notAlani
+                garanti_bitis: garanti_bitis 
             }
         ]);
 
@@ -801,7 +790,6 @@ app.post('/urun-ekle', oturumKontrolu, async (req, res) => {
 
 app.post('/urun-duzenle', oturumKontrolu, async (req, res) => {
     const { id, musteri_adi, edit_marka, urun_adi, seri_no, garanti_baslangic, garanti_bitis } = req.body;
-    const notAlaniDuzenle = req.body['not'] || '';
 
     const { error } = await supabase
         .from('urunler')
@@ -811,8 +799,7 @@ app.post('/urun-duzenle', oturumKontrolu, async (req, res) => {
             urun_adi: urun_adi, 
             seri_no: seri_no, 
             garanti_baslangic: garanti_baslangic, 
-            garanti_bitis: garanti_bitis,
-            note: notAlaniDuzenle
+            garanti_bitis: garanti_bitis 
         })
         .eq('id', id);
 
