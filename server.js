@@ -390,11 +390,25 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
 
     const musteriMap = {};
     const memorandaMarka = new Set();
+    const musteriDurumMap = {};
     
-    tumUrunler.forEach(u => {
+    (tumUrunler || []).forEach(u => {
         if(u.musteri_adi) musteriMap[u.musteri_adi] = (musteriMap[u.musteri_adi] || 0) + 1;
         if(u.marka && u.marka.trim() !== "" && u.marka.trim() !== "-") {
             memorandaMarka.add(u.marka.trim());
+        }
+        if (u.musteri_adi) {
+            if (!musteriDurumMap[u.musteri_adi]) musteriDurumMap[u.musteri_adi] = 'guvenli';
+            if (u.arsivlendi) {
+                musteriDurumMap[u.musteri_adi] = 'arsivlendi';
+            } else {
+                const bitis = new Date(u.garanti_bitis);
+                const t1 = Date.UTC(bugun.getFullYear(), bugun.getMonth(), bugun.getDate());
+                const t2 = Date.UTC(bitis.getFullYear(), bitis.getMonth(), bitis.getDate());
+                const kalan = Math.floor((t2 - t1) / (1000 * 60 * 60 * 24));
+                if (kalan < 0) musteriDurumMap[u.musteri_adi] = 'sureDoldu';
+                else if (kalan <= 30 && musteriDurumMap[u.musteri_adi] === 'guvenli') musteriDurumMap[u.musteri_adi] = 'kritik';
+            }
         }
     });
 
@@ -427,8 +441,10 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
     }
 
     let urunSatirlari = "";
+    let notDizisi = [];
     if (tumUrunler && tumUrunler.length > 0) {
         tumUrunler.forEach((urun) => {
+            notDizisi.push(urun.note || '');
             const bitisTarihi = new Date(urun.garanti_bitis);
             const t1 = Date.UTC(bugun.getFullYear(), bugun.getMonth(), bugun.getDate());
             const t2 = Date.UTC(bitisTarihi.getFullYear(), bitisTarihi.getMonth(), bitisTarihi.getDate());
@@ -437,7 +453,11 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
             let satirSinifi = ""; 
             let durumMetni = `<span class="badge bg-success shadow-sm text-white px-3 py-2 rounded-pill fw-bold" style="background-color: #10b981;">🟢 Güvenli (${kalanGun} Gün)</span>`;
             
-            if (kalanGun < 0) { 
+            if (urun.arsivlendi) {
+                satirSinifi = "table-secondary-custom";
+                durumMetni = `<span class="badge bg-secondary shadow-sm text-white px-3 py-2 rounded-pill fw-bold">📦 Arşivlendi</span>`;
+            }
+            else if (kalanGun < 0) { 
                 satirSinifi = "table-danger-custom"; 
                 durumMetni = `<span class="badge bg-danger shadow-sm text-white px-3 py-2 rounded-pill fw-bold" style="background-color: #ef4444;">🔴 Süre Doldu</span>`; 
             }
@@ -475,8 +495,12 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
                             data-baslangic="${urun.garanti_baslangic}" 
                             data-bitis="${urun.garanti_bitis}"
                             data-not="${urun.note || ''}">✏️ Düzenle</button>
+                    ${urun.arsivlendi 
+                        ? '<button class="btn btn-sm btn-outline-success fw-bold me-1 j-aktif" data-id="' + urun.id + '">🔄 Aktif Hale Getir</button>'
+                        : '<button class="btn btn-sm btn-outline-warning fw-bold me-1 j-arsivle" data-id="' + urun.id + '">📦 Arşivle</button>'}
                     <button class="btn btn-sm btn-outline-danger fw-bold j-sil" data-id="${urun.id}">🗑️ Sil</button>
                 </td>
+                <td class="text-center">${urun.note ? '<button class="btn btn-sm btn-outline-secondary rounded-circle j-not" data-not-idx="' + (notDizisi.length - 1) + '" title="Not">📝</button>' : ''}</td>
             </tr>`;
         });
     }
@@ -582,7 +606,7 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
             <div class="table-responsive">
                 <table id="genelUrunTablosu" class="table align-middle table-hover w-100 m-0">
                     <thead class="table-light">
-                        <tr><th>Müşteri / Şirket</th><th>Marka</th><th>Ürün Adı</th><th>Seri No</th><th>Başlangıç Tarihi</th><th>Bitiş Tarihi</th><th>Garanti Durumu</th><th class="text-end">İşlemler</th></tr>
+                        <tr><th>Müşteri / Şirket</th><th>Marka</th><th>Ürün Adı</th><th>Seri No</th><th>Başlangıç Tarihi</th><th>Bitiş Tarihi</th><th>Garanti Durumu</th><th class="text-end">İşlemler</th><th class="text-center" style="width:50px;">Not</th></tr>
                     </thead>
                     <tbody>${urunSatirlari}</tbody>
                 </table>
@@ -609,6 +633,16 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
       </div>
     </div>
 
+    <div class="modal fade" id="notModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content style-radius">
+          <div class="modal-header navbar-custom text-white py-3"><h5 class="modal-title fw-bold fs-6">📝 Ürün Notu</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body p-4"><p id="notIcerik" class="mb-0 text-dark"></p></div>
+          <div class="modal-footer bg-light"><button type="button" class="btn btn-sm btn-secondary fw-bold px-3" data-bs-dismiss="modal">Kapat</button></div>
+        </div>
+      </div>
+    </div>
+
     <script>
         function musteriFormuDegistir() {
             if (document.getElementById('tipMevcut').checked) {
@@ -630,7 +664,7 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
         }
 
         $(document).ready(function() {
-            $('#musteriTablosu').DataTable({ "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json" }, "paging": true, "pageLength": 5, "lengthChange": false, "info": false });
+            $('#musteriTablosu').DataTable({ "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json" }, "paging": true, "pageLength": 10, "lengthMenu": [10, 25, 50, 100], "info": false });
             $('#genelUrunTablosu').DataTable({ "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json" }, "order": [[ 5, "asc" ]], "paging": true, "pageLength": 10, "info": false });
             
             $('#genelUrunTablosu').on('click', '.j-duzenle', function() {
@@ -648,6 +682,20 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
             $('#genelUrunTablosu').on('click', '.j-sil', function() {
                 var id = $(this).attr('data-id');
                 if (confirm('Bu ürünü silmek istediğinize emin misiniz?')) { window.location.href = '/urun-sil/' + id; }
+            });
+            $('#genelUrunTablosu').on('click', '.j-arsivle', function() {
+                var id = $(this).attr('data-id');
+                if (confirm('Bu ürünü arşive kaldırmak istediğinize emin misiniz?')) { window.location.href = '/urun-arsivle/' + id; }
+            });
+            $('#genelUrunTablosu').on('click', '.j-aktif', function() {
+                var id = $(this).attr('data-id');
+                if (confirm('Bu ürünü tekrar aktif yapmak istediğinize emin misiniz?')) { window.location.href = '/urun-aktif/' + id; }
+            });
+            $('#genelUrunTablosu').on('click', '.j-not', function() {
+                var notlar = ${JSON.stringify(notDizisi)};
+                var idx = $(this).attr('data-not-idx');
+                document.getElementById('notIcerik').textContent = notlar[idx] || 'Not bulunmuyor.';
+                new bootstrap.Modal(document.getElementById('notModal')).show();
             });
         });
     </script>
@@ -676,7 +724,9 @@ app.get('/detay', oturumKontrolu, async (req, res) => {
     let filtreBaslik = type === 'musteri' ? `🏢 ${q} Şirketine Ait Cihazlar` : `🍇 ${q} Markalı Tüm Cihazlar`;
 
     let detaySatirlari = "";
+    let detayNotDizisi = [];
     filtrelenmisUrunler.forEach((urun) => {
+        detayNotDizisi.push(urun.note || '');
         const bitisTarihi = new Date(urun.garanti_bitis);
         const t1 = Date.UTC(bugun.getFullYear(), bugun.getMonth(), bugun.getDate());
         const t2 = Date.UTC(bitisTarihi.getFullYear(), bitisTarihi.getMonth(), bitisTarihi.getDate());
@@ -685,7 +735,11 @@ app.get('/detay', oturumKontrolu, async (req, res) => {
         let satirSinifi = ""; 
         let durumMetni = `<span class="badge bg-success px-3 py-2 rounded-pill fw-bold" style="background-color: #10b981;">🟢 Güvenli (${kalanGun} Gün)</span>`;
         
-        if (kalanGun < 0) { 
+        if (urun.arsivlendi) {
+            satirSinifi = "table-secondary-custom";
+            durumMetni = `<span class="badge bg-secondary px-3 py-2 rounded-pill fw-bold">📦 Arşivlendi</span>`;
+        }
+        else if (kalanGun < 0) { 
             satirSinifi = "table-danger-custom"; 
             durumMetni = `<span class="badge bg-danger px-3 py-2 rounded-pill fw-bold" style="background-color: #ef4444;">🔴 Süre Doldu</span>`; 
         }
@@ -703,6 +757,7 @@ app.get('/detay', oturumKontrolu, async (req, res) => {
             <td data-order="${urun.garanti_baslangic || ''}" class="text-muted">${tarihFormatla(urun.garanti_baslangic)}</td>
             <td data-order="${urun.garanti_bitis || ''}" class="fw-semibold">${tarihFormatla(urun.garanti_bitis)}</td>
             <td>${durumMetni}</td>
+            <td class="text-center">${urun.note ? '<button class="btn btn-sm btn-outline-secondary rounded-circle j-not" data-not-idx="' + (detayNotDizisi.length - 1) + '" title="Not">📝</button>' : ''}</td>
         </tr>`;
     });
 
@@ -714,8 +769,9 @@ app.get('/detay', oturumKontrolu, async (req, res) => {
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
         <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-        <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-        <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
         <title>Verytech - Özel Filtre Detay Sayfası</title>
         <style>
             body { background-color: #f1f5f9; font-family: 'Segoe UI', sans-serif; }
@@ -723,6 +779,7 @@ app.get('/detay', oturumKontrolu, async (req, res) => {
             .card-detay { border-top: 6px solid #6d28d9; border-radius: 12px; }
             .table-warning-custom, .table-warning-custom td { background-color: #fefce8 !important; }
             .table-danger-custom, .table-danger-custom td { background-color: #fef2f2 !important; }
+            .table-secondary-custom, .table-secondary-custom td { background-color: #f8f9fa !important; }
         </style>
     </head>
     <body>
@@ -740,18 +797,36 @@ app.get('/detay', oturumKontrolu, async (req, res) => {
             <div class="table-responsive">
                 <table id="detayTablo" class="table align-middle table-hover w-100">
                     <thead class="table-light">
-                        <tr><th>Müşteri</th><th>Marka</th><th>Ürün Adı</th><th>Seri No</th><th>Başlangıç</th><th>Bitiş</th><th>Durum</th></tr>
+                        <tr><th>Müşteri</th><th>Marka</th><th>Ürün Adı</th><th>Seri No</th><th>Başlangıç</th><th>Bitiş</th><th>Durum</th><th class="text-center" style="width:50px;">Not</th></tr>
                     </thead>
                     <tbody>
-                        ${detaySatirlari || '<tr><td colspan="7" class="text-center text-muted">Kayıtlı ürün bulunamadı.</td></tr>'}
+                        ${detaySatirlari || '<tr><td colspan="8" class="text-center text-muted">Kayıtlı ürün bulunamadı.</td></tr>'}
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="notModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content style-radius">
+          <div class="modal-header navbar-custom text-white py-3"><h5 class="modal-title fw-bold fs-6">📝 Ürün Notu</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body p-4"><p id="notIcerik" class="mb-0 text-dark"></p></div>
+          <div class="modal-footer bg-light"><button type="button" class="btn btn-sm btn-secondary fw-bold px-3" data-bs-dismiss="modal">Kapat</button></div>
+        </div>
+      </div>
+    </div>
+
     <script>
+        var detayNotlar = ${JSON.stringify(detayNotDizisi)};
         $(document).ready(function() {
             $('#detayTablo').DataTable({ "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json" }, "paging": true, "info": false });
+        });
+        $(document).on('click', '.j-not', function() {
+            var idx = parseInt($(this).attr('data-not-idx'));
+            document.getElementById('notIcerik').textContent = detayNotlar[idx] || 'Not bulunmuyor.';
+            var notModal = new bootstrap.Modal(document.getElementById('notModal'));
+            notModal.show();
         });
     </script>
     </body>
@@ -829,6 +904,30 @@ app.get('/urun-sil/:id', oturumKontrolu, async (req, res) => {
         .eq('id', id);
 
     if (error) return res.status(500).send("Silme Hatası: " + error.message);
+    res.redirect('/dashboard');
+});
+
+app.get('/urun-arsivle/:id', oturumKontrolu, async (req, res) => {
+    const id = req.params.id;
+
+    const { error } = await supabase
+        .from('urunler')
+        .update({ arsivlendi: true })
+        .eq('id', id);
+
+    if (error) return res.status(500).send("Arşivleme Hatası: " + error.message);
+    res.redirect('/dashboard');
+});
+
+app.get('/urun-aktif/:id', oturumKontrolu, async (req, res) => {
+    const id = req.params.id;
+
+    const { error } = await supabase
+        .from('urunler')
+        .update({ arsivlendi: false })
+        .eq('id', id);
+
+    if (error) return res.status(500).send("Aktifleştirme Hatası: " + error.message);
     res.redirect('/dashboard');
 });
 
