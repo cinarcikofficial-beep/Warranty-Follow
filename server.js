@@ -967,13 +967,15 @@ app.get('/api/cron/garanti-kontrol', async (req, res) => {
 
     try {
         const bugun = new Date();
-        const { data: tumUrunler, error } = await supabase.from('urunler').select('*');
+        const { data: tumUrunler, error } = await supabase.from('urunler').select('*').eq('arsivlendi', false);
         if (error) throw error;
 
         let mailIcerik = `<h3>Verytech Garanti ve Bakım Raporu</h3><p>Merhaba, sistem taraması sonucunda durumları kritik olan cihaz listesi aşağıdadır:</p><table border="1" cellpadding="8" style="border-collapse:collapse;"><thead><tr style="background:#f1f5f9;"><th>Müşteri</th><th>Marka/Ürün</th><th>Seri No</th><th>Bitiş Tarihi</th><th>Kalan Gün</th></tr></thead><tbody>`;
         let mailGonderilecekMi = false;
 
         tumUrunler.forEach((urun) => {
+            if (urun.arsivlendi !== false) return;
+
             const bitisTarihi = new Date(urun.garanti_bitis);
             const t1 = Date.UTC(bugun.getFullYear(), bugun.getMonth(), bugun.getDate());
             const t2 = Date.UTC(bitisTarihi.getFullYear(), bitisTarihi.getMonth(), bitisTarihi.getDate());
