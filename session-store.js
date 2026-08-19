@@ -16,7 +16,12 @@ class SupabaseSessionStore extends session.Store {
                 .eq('sid', sid)
                 .single();
 
-            if (error || !data) return callback(null, null);
+            if (error) {
+                console.error('[SessionStore] GET hatası:', error.message);
+                return callback(null, null);
+            }
+
+            if (!data) return callback(null, null);
 
             if (new Date(data.expired_at) < new Date()) {
                 await this.destroy(sid);
@@ -25,7 +30,8 @@ class SupabaseSessionStore extends session.Store {
 
             callback(null, JSON.parse(data.sess));
         } catch (err) {
-            callback(err);
+            console.error('[SessionStore] GET exception:', err.message);
+            callback(null, null);
         }
     }
 
@@ -44,9 +50,14 @@ class SupabaseSessionStore extends session.Store {
                     expired_at: expiredAt.toISOString()
                 }, { onConflict: 'sid' });
 
-            callback(error);
+            if (error) {
+                console.error('[SessionStore] SET hatası:', error.message);
+            }
+
+            callback(null);
         } catch (err) {
-            callback(err);
+            console.error('[SessionStore] SET exception:', err.message);
+            callback(null);
         }
     }
 
@@ -57,9 +68,14 @@ class SupabaseSessionStore extends session.Store {
                 .delete()
                 .eq('sid', sid);
 
-            callback(error);
+            if (error) {
+                console.error('[SessionStore] DESTROY hatası:', error.message);
+            }
+
+            callback(null);
         } catch (err) {
-            callback(err);
+            console.error('[SessionStore] DESTROY exception:', err.message);
+            callback(null);
         }
     }
 }

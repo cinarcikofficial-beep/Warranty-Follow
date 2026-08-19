@@ -1,9 +1,10 @@
 const express = require('express');
-const session = require('express-session');
+const cookieParser = require('cookie-parser');
 const { createClient } = require('@supabase/supabase-js');
 const nodemailer = require('nodemailer');
-const SupabaseSessionStore = require('./session-store');
 const app = express();
+
+const COOKIE_SECRET = process.env.COOKIE_SECRET || 'verytech_gizli_anahtar_123';
 
 // 1. SUPABASE BAĞLANTISI (GÜNCEL VERYTECH BAĞLANTILARI)
 const supabaseUrl = process.env.SUPABASE_URL || 'https://ravamzdhieateguwcofd.supabase.co';
@@ -14,20 +15,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.use(session({
-    store: new SupabaseSessionStore(supabase, {
-        ttl: 86400
-    }),
-    secret: 'verytech_gizli_anahtar_123',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        httpOnly: true,
-        sameSite: 'lax',
-        maxAge: null
-    }
-}));
+app.use(cookieParser(COOKIE_SECRET));
 
 app.use(express.static('public', { 
     setHeaders: (res, path) => {
@@ -45,10 +33,9 @@ app.get('/favicon.ico', (req, res) => {
 
 // 🛡️ GÜVENLİK DUVARI (OTURUM KONTROL MIDDLEWARE)
 function oturumKontrolu(req, res, next) {
-    if (req.session && req.session.userId) {
-        return next(); // Oturum geçerliyse bir sonraki sayfaya/işleme izin ver
+    if (req.signedCookies && req.signedCookies.userId) {
+        return next();
     }
-    // Oturum yoksa direkt giriş sayfasına yönlendir
     res.redirect('/');
 }
 
@@ -76,7 +63,7 @@ const transporter = nodemailer.createTransport({
 
 // 4. GİRİŞ SAYFASI (LOGIN)
 app.get('/', (req, res) => {
-    if (req.session.userId) return res.redirect('/dashboard');
+    if (req.signedCookies && req.signedCookies.userId) return res.redirect('/dashboard');
     res.send(`
     <!DOCTYPE html>
     <html lang="tr">
@@ -262,9 +249,16 @@ app.post('/login', async (req, res) => {
         return res.send("<script>alert('Hatalı e-posta, şifre veya onaylanmamış hesap!'); window.location.href='/';</script>");
     }
 
-    req.session.userId = user.id;
-    const isimParçası = temizEmail.split('@')[0]; 
-    req.session.userName = isimParçası.charAt(0).toUpperCase() + isimParçası.slice(1); 
+    const cookieOptions = {
+        httpOnly: true,
+        signed: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000
+    };
+
+    res.cookie('userId', user.id, cookieOptions);
+    res.cookie('userName', isimParçası.charAt(0).toUpperCase() + isimParçası.slice(1), cookieOptions);
     res.redirect('/dashboard');
 });
 
@@ -581,15 +575,23 @@ app.post('/sifre-belirle', async (req, res) => {
 
     if (error) return res.status(500).send("Şifre Kayıt Hatası: " + error.message);
 
-    req.session.userId = user.id;
-    const isimParçası = email.split('@')[0]; 
-    req.session.userName = isimParçası.charAt(0).toUpperCase() + isimParçası.slice(1); 
+    const cookieOptions = {
+        httpOnly: true,
+        signed: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000
+    };
+
+    res.cookie('userId', user.id, cookieOptions);
+    res.cookie('userName', isimParçası.charAt(0).toUpperCase() + isimParçası.slice(1), cookieOptions);
 
     res.send("<script>alert('Şifreniz başarıyla güncellendi! Sisteme giriş yapılıyor...'); window.location.href='/dashboard';</script>");
 });
 
 app.get('/logout', (req, res) => {
-    req.session.destroy();
+    res.clearCookie('userId');
+    res.clearCookie('userName');
     res.redirect('/');
 });
 
@@ -847,7 +849,7 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
             <div class="section-divider"></div>
             <a href="/dashboard" class="navbar-brand-custom">WARRANTY FOLLOW</a>
         </div>
-        <span class="user-pill">🔒 Kullanıcı: <b>${req.session.userName}</b> | <a href="/logout">Çıkış</a></span>
+        <span class="user-pill">🔒 Kullanıcı: <b>${req.signedCookies.userName || 'Kullanıcı'}</b> | <a href="/logout">Çıkış</a></span>
     </nav>
     
     <div class="container-fluid px-4">
