@@ -249,6 +249,7 @@ app.post('/login', async (req, res) => {
         return res.send("<script>alert('Hatalı e-posta, şifre veya onaylanmamış hesap!'); window.location.href='/';</script>");
     }
 
+    const isimParcası = temizEmail.split('@')[0];
     const cookieOptions = {
         httpOnly: true,
         signed: true,
@@ -258,7 +259,7 @@ app.post('/login', async (req, res) => {
     };
 
     res.cookie('userId', user.id, cookieOptions);
-    res.cookie('userName', isimParçası.charAt(0).toUpperCase() + isimParçası.slice(1), cookieOptions);
+    res.cookie('userName', isimParcası.charAt(0).toUpperCase() + isimParcası.slice(1), cookieOptions);
     res.redirect('/dashboard');
 });
 
@@ -575,6 +576,7 @@ app.post('/sifre-belirle', async (req, res) => {
 
     if (error) return res.status(500).send("Şifre Kayıt Hatası: " + error.message);
 
+    const isimParcası2 = email.split('@')[0];
     const cookieOptions = {
         httpOnly: true,
         signed: true,
@@ -584,7 +586,7 @@ app.post('/sifre-belirle', async (req, res) => {
     };
 
     res.cookie('userId', user.id, cookieOptions);
-    res.cookie('userName', isimParçası.charAt(0).toUpperCase() + isimParçası.slice(1), cookieOptions);
+    res.cookie('userName', isimParcası2.charAt(0).toUpperCase() + isimParcası2.slice(1), cookieOptions);
 
     res.send("<script>alert('Şifreniz başarıyla güncellendi! Sisteme giriş yapılıyor...'); window.location.href='/dashboard';</script>");
 });
