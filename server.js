@@ -24,10 +24,17 @@ app.use(session({
     }
 }));
 
-app.use(express.static('public'));
+app.use(express.static('public', { 
+    setHeaders: (res, path) => {
+        if (path.endsWith('.svg')) {
+            res.setHeader('Content-Type', 'image/svg+xml');
+        }
+    }
+}));
 
 // Favicon route
 app.get('/favicon.ico', (req, res) => {
+    res.setHeader('Content-Type', 'image/svg+xml');
     res.sendFile('favicon.svg', { root: 'public' });
 });
 
@@ -161,7 +168,7 @@ app.get('/', (req, res) => {
                 margin-bottom: 0;
             }
             .forgot-link a {
-                color: #fcbb00;
+                color: #fbbf24;
                 text-decoration: none;
                 font-size: 0.75rem;
                 line-height: 1.333;
@@ -169,13 +176,13 @@ app.get('/', (req, res) => {
                 cursor: pointer;
                 transition: color 0.2s;
             }
-            .forgot-link a:hover { color: #ffd236; }
+            .forgot-link a:hover { color: #fcd34d; }
             .btn-submit {
                 width: 100%;
                 padding: 0.625rem;
                 border: none;
                 border-radius: 0.625rem;
-                background: #2563eb;
+                background: #3b82f6;
                 color: #ffffff;
                 font-size: 0.875rem;
                 line-height: 1.429;
@@ -184,13 +191,13 @@ app.get('/', (req, res) => {
                 cursor: pointer;
                 transition: background 0.2s;
             }
-            .btn-submit:hover { background: #3b82f6; }
+            .btn-submit:hover { background: #60a5fa; }
             .register-link {
                 text-align: center;
                 padding-top: 0.5rem;
             }
             .register-link a {
-                color: #00d2ef;
+                color: #67e8f9;
                 text-decoration: none;
                 font-size: 0.75rem;
                 line-height: 1.333;
@@ -198,7 +205,7 @@ app.get('/', (req, res) => {
                 cursor: pointer;
                 transition: color 0.2s;
             }
-            .register-link a:hover { color: #67e8f9; }
+            .register-link a:hover { color: #a5f3fc; }
             .footer-custom { text-align: center; padding: 1.5rem; color: #475569; font-size: 0.75rem; }
             .footer-custom span { color: #64748b; font-weight: 600; }
         </style>
@@ -279,8 +286,8 @@ app.get('/sifremi-unuttum', (req, res) => {
             .form-input { width: 100%; padding: 0.625rem 1rem; border-radius: 0.625rem; background: #0f172a; border: 1px solid #475569; color: #ffffff; font-size: 0.875rem; line-height: 1.429; font-family: inherit; outline: none; transition: all 0.2s ease; }
             .form-input::placeholder { color: #64748b; }
             .form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
-            .btn-submit { width: 100%; padding: 0.625rem; border: none; border-radius: 0.625rem; background: #fcbb00; color: #1e293b; font-size: 0.875rem; line-height: 1.429; font-weight: 700; font-family: inherit; cursor: pointer; transition: background 0.2s; }
-            .btn-submit:hover { background: #ffd236; }
+            .btn-submit { width: 100%; padding: 0.625rem; border: none; border-radius: 0.625rem; background: #3b82f6; color: #ffffff; font-size: 0.875rem; line-height: 1.429; font-weight: 700; font-family: inherit; cursor: pointer; transition: background 0.2s; }
+            .btn-submit:hover { background: #60a5fa; }
             .back-link { display: block; text-align: center; margin-top: 1rem; }
             .back-link a { color: #90a1b9; text-decoration: none; font-size: 0.875rem; line-height: 1.429; transition: color 0.2s; }
             .back-link a:hover { color: #e2e8f0; }
@@ -376,8 +383,8 @@ app.get('/kayit-ol', (req, res) => {
             .form-input { width: 100%; padding: 0.625rem 1rem; border-radius: 0.625rem; background: #0f172a; border: 1px solid #475569; color: #ffffff; font-size: 0.875rem; line-height: 1.429; font-family: inherit; outline: none; transition: all 0.2s ease; }
             .form-input::placeholder { color: #64748b; }
             .form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
-            .btn-submit { width: 100%; padding: 0.625rem; border: none; border-radius: 0.625rem; background: #00d2ef; color: #ffffff; font-size: 0.875rem; line-height: 1.429; font-weight: 700; font-family: inherit; cursor: pointer; transition: background 0.2s; }
-            .btn-submit:hover { background: #67e8f9; }
+            .btn-submit { width: 100%; padding: 0.625rem; border: none; border-radius: 0.625rem; background: #3b82f6; color: #ffffff; font-size: 0.875rem; line-height: 1.429; font-weight: 700; font-family: inherit; cursor: pointer; transition: background 0.2s; }
+            .btn-submit:hover { background: #60a5fa; }
             .back-link { display: block; text-align: center; margin-top: 1rem; }
             .back-link a { color: #90a1b9; text-decoration: none; font-size: 0.875rem; line-height: 1.429; transition: color 0.2s; }
             .back-link a:hover { color: #e2e8f0; }
@@ -467,8 +474,8 @@ app.get('/kod-onayla', (req, res) => {
             .form-input { width: 100%; padding: 0.75rem 1rem; border-radius: 0.625rem; background: #0f172a; border: 1px solid #475569; color: #ffffff; font-size: 1.25rem; line-height: 1.4; font-family: inherit; outline: none; transition: all 0.2s ease; text-align: center; letter-spacing: 5px; }
             .form-input::placeholder { color: #64748b; letter-spacing: 2px; }
             .form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
-            .btn-submit { width: 100%; padding: 0.625rem; border: none; border-radius: 0.625rem; background: #22c55e; color: #ffffff; font-size: 0.875rem; line-height: 1.429; font-weight: 700; font-family: inherit; cursor: pointer; transition: background 0.2s; }
-            .btn-submit:hover { background: #4ade80; }
+            .btn-submit { width: 100%; padding: 0.625rem; border: none; border-radius: 0.625rem; background: #3b82f6; color: #ffffff; font-size: 0.875rem; line-height: 1.429; font-weight: 700; font-family: inherit; cursor: pointer; transition: background 0.2s; }
+            .btn-submit:hover { background: #60a5fa; }
             .footer-custom { text-align: center; padding: 1.5rem; color: #475569; font-size: 0.75rem; }
             .footer-custom span { color: #64748b; font-weight: 600; }
         </style>
@@ -528,8 +535,8 @@ app.get('/sifre-belirle', (req, res) => {
             .form-input { width: 100%; padding: 0.625rem 1rem; border-radius: 0.625rem; background: #0f172a; border: 1px solid #475569; color: #ffffff; font-size: 0.875rem; line-height: 1.429; font-family: inherit; outline: none; transition: all 0.2s ease; }
             .form-input::placeholder { color: #64748b; }
             .form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
-            .btn-submit { width: 100%; padding: 0.625rem; border: none; border-radius: 0.625rem; background: #2563eb; color: #ffffff; font-size: 0.875rem; line-height: 1.429; font-weight: 700; font-family: inherit; cursor: pointer; transition: background 0.2s; }
-            .btn-submit:hover { background: #3b82f6; }
+            .btn-submit { width: 100%; padding: 0.625rem; border: none; border-radius: 0.625rem; background: #3b82f6; color: #ffffff; font-size: 0.875rem; line-height: 1.429; font-weight: 700; font-family: inherit; cursor: pointer; transition: background 0.2s; }
+            .btn-submit:hover { background: #60a5fa; }
             .footer-custom { text-align: center; padding: 1.5rem; color: #475569; font-size: 0.75rem; }
             .footer-custom span { color: #64748b; font-weight: 600; }
         </style>
@@ -746,8 +753,8 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
             .form-check-input-dark { background-color: #0f172a; border-color: #475569; }
             .form-check-input-dark:checked { background-color: #3b82f6; border-color: #3b82f6; }
             .form-check-label-dark { font-size: 0.8rem; font-weight: 600; color: #e2e8f0; cursor: pointer; }
-            .btn-green { background: #10b981; color: #ffffff; font-size: 0.875rem; font-weight: 700; padding: 0.5rem 1.5rem; border: none; border-radius: 0.5rem; cursor: pointer; transition: background 0.2s; }
-            .btn-green:hover { background: #34d399; }
+            .btn-green { background: #3b82f6; color: #ffffff; font-size: 0.875rem; font-weight: 700; padding: 0.5rem 1.5rem; border: none; border-radius: 0.5rem; cursor: pointer; transition: background 0.2s; }
+            .btn-green:hover { background: #60a5fa; }
             .btn-outline-blue { color: #0284c7; border: 1px solid #0284c7; background: transparent; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 0.5rem; cursor: pointer; text-decoration: none; display: inline-block; transition: all 0.2s; }
             .btn-outline-blue:hover { background: #0284c7; color: #ffffff; }
             .btn-outline-purple { color: #a78bfa; border: 1px solid #6d28d9; background: transparent; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s; }
