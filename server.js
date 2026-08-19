@@ -801,26 +801,27 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
             .dataTables_wrapper .dataTables_paginate { padding-top: 0.5rem; text-align: right; }
             .dataTables_wrapper .dataTables_paginate .paginate_button { 
                 display: inline-flex; align-items: center; justify-content: center;
-                min-width: 32px; height: 32px;
-                color: #e2e8f0 !important; background: #1e293b !important; 
-                border: 1px solid #334155 !important; border-radius: 0.375rem !important; 
-                margin: 0 2px; padding: 0.25rem 0.5rem; font-size: 0.8rem; line-height: 1;
+                min-width: 36px; height: 34px;
+                color: #cbd5e1 !important; background: #1e293b !important; 
+                border: 1px solid #334155 !important; border-radius: 0.5rem !important; 
+                margin: 0 2px; padding: 0.25rem 0.75rem; font-size: 0.8rem; font-weight: 600; line-height: 1;
+                transition: all 0.2s !important;
             }
             .dataTables_wrapper .dataTables_paginate .paginate_button:hover { 
                 color: #ffffff !important; background: #334155 !important; 
                 border-color: #475569 !important; 
             }
             .dataTables_wrapper .dataTables_paginate .paginate_button.current { 
-                color: #ffffff !important; background: #3b82f6 !important; 
-                border-color: #3b82f6 !important; font-weight: 700; 
+                color: #ffffff !important; background: #334155 !important; 
+                border-color: #475569 !important; font-weight: 700; 
             }
             .dataTables_wrapper .dataTables_paginate .paginate_button.disabled { 
-                color: #475569 !important; background: transparent !important; 
-                border-color: #334155 !important; cursor: not-allowed; opacity: 0.5;
+                color: #334155 !important; background: transparent !important; 
+                border-color: #1e293b !important; cursor: not-allowed; opacity: 0.4;
             }
             .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
-                color: #475569 !important; background: transparent !important;
-                border-color: #334155 !important;
+                color: #334155 !important; background: transparent !important;
+                border-color: #1e293b !important;
             }
             .dataTables_wrapper .dataTables_info { color: #64748b; font-size: 0.75rem; padding-top: 0.5rem; }
             table.dataTable { border-collapse: collapse !important; }
@@ -968,15 +969,15 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
             $('#musteriTablosu').DataTable({ 
                 "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json" }, 
                 "paging": true, "pageLength": 10, "lengthMenu": [10, 25, 50, 100], 
-                "info": false, "searching": false,
-                "dom": '<"top"flp>rt<"bottom"ip>'
+                "info": false, "searching": true,
+                "dom": '<"top"fl>rt<"bottom"ip>'
             });
             $('#genelUrunTablosu').DataTable({ 
                 "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json" }, 
                 "order": [[ 6, "asc" ]], 
                 "paging": true, "pageLength": 10, 
                 "info": false,
-                "dom": '<"top"flp>rt<"bottom"ip>'
+                "dom": '<"top"fl>rt<"bottom"ip>'
             });
             
             $('#genelUrunTablosu').on('click', '.j-duzenle', function() {
