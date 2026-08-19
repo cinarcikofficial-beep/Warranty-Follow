@@ -16,11 +16,20 @@ app.use(express.json());
 app.use(session({
     secret: 'verytech_gizli_anahtar_123',
     resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false } // Vercel'de HTTPS altında çalışırken production'da true yapabilirsin
+    saveUninitialized: false,
+    cookie: { 
+        secure: false, 
+        httpOnly: true, 
+        maxAge: 24 * 60 * 60 * 1000 // 24 saat
+    }
 }));
 
 app.use(express.static('public'));
+
+// Favicon route
+app.get('/favicon.ico', (req, res) => {
+    res.sendFile('favicon.svg', { root: 'public' });
+});
 
 // 🛡️ GÜVENLİK DUVARI (OTURUM KONTROL MIDDLEWARE)
 function oturumKontrolu(req, res, next) {
@@ -61,36 +70,166 @@ app.get('/', (req, res) => {
     <html lang="tr">
     <head>
         <meta charset="UTF-8">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <title>Verytech - Giriş</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Verytech Warranty Follow - Giriş</title>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg">
         <style>
-            body { background-color: #0f172a; height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'Segoe UI', sans-serif; }
-            .login-card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-            .form-control { background: #0f172a; border-color: #475569; color: #fff; }
-            .form-control:focus { background: #0f172a; color: #fff; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background-color: #0f172a;
+                font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+                -webkit-font-smoothing: antialiased;
+                padding: 1rem;
+            }
+            .login-card {
+                width: 100%;
+                max-width: 400px;
+                background: #1e293b;
+                border: 1px solid #334155;
+                border-radius: 1.125rem;
+                padding: 2.5rem;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+                text-align: center;
+            }
+            .logo-container {
+                display: flex;
+                justify-content: center;
+                margin-bottom: 0.75rem;
+            }
+            .logo-container img {
+                width: 200px;
+                height: 200px;
+                object-fit: contain;
+            }
+            .brand-title {
+                font-size: 1.5rem;
+                line-height: 1.333;
+                font-weight: 700;
+                color: #ffffff;
+                letter-spacing: 0.025em;
+                margin-bottom: 0;
+            }
+            .brand-subtitle {
+                font-size: 0.875rem;
+                line-height: 1.429;
+                font-weight: 600;
+                color: #cad5e2;
+                margin-bottom: 0.5rem;
+            }
+            .brand-desc {
+                font-size: 0.875rem;
+                line-height: 1.429;
+                color: #90a1b9;
+                margin-bottom: 1rem;
+            }
+            .form-area { text-align: left; }
+            .form-group { margin-bottom: 1rem; }
+            .form-label {
+                display: block;
+                font-size: 0.75rem;
+                line-height: 1.333;
+                font-weight: 600;
+                color: #90a1b9;
+                margin-bottom: 0.375rem;
+            }
+            .form-input {
+                width: 100%;
+                padding: 0.625rem 1rem;
+                border-radius: 0.625rem;
+                background: #0f172a;
+                border: 1px solid #475569;
+                color: #ffffff;
+                font-size: 0.875rem;
+                line-height: 1.429;
+                font-family: inherit;
+                outline: none;
+                transition: all 0.2s ease;
+            }
+            .form-input::placeholder { color: #64748b; }
+            .form-input:focus {
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59,130,246,0.25);
+            }
+            .forgot-link {
+                text-align: right;
+                margin-top: 0.25rem;
+                margin-bottom: 0;
+            }
+            .forgot-link a {
+                color: #fcbb00;
+                text-decoration: none;
+                font-size: 0.75rem;
+                line-height: 1.333;
+                font-weight: 600;
+                cursor: pointer;
+                transition: color 0.2s;
+            }
+            .forgot-link a:hover { color: #ffd236; }
+            .btn-submit {
+                width: 100%;
+                padding: 0.625rem;
+                border: none;
+                border-radius: 0.625rem;
+                background: #2563eb;
+                color: #ffffff;
+                font-size: 0.875rem;
+                line-height: 1.429;
+                font-weight: 700;
+                font-family: inherit;
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+            .btn-submit:hover { background: #3b82f6; }
+            .register-link {
+                text-align: center;
+                padding-top: 0.5rem;
+            }
+            .register-link a {
+                color: #00d2ef;
+                text-decoration: none;
+                font-size: 0.75rem;
+                line-height: 1.333;
+                font-weight: 600;
+                cursor: pointer;
+                transition: color 0.2s;
+            }
+            .register-link a:hover { color: #67e8f9; }
+            .footer-custom { text-align: center; padding: 1.5rem; color: #475569; font-size: 0.75rem; }
+            .footer-custom span { color: #64748b; font-weight: 600; }
         </style>
     </head>
     <body>
-        <div class="login-card text-center">
-            <img src="${logoUrl}" alt="Verytech" style="height: 40px; width: auto; object-fit: contain; margin-bottom: 2rem;">
-            <form action="/login" method="POST">
-                <div class="mb-3 text-start">
-                    <label class="form-label text-secondary small fw-bold">E-Posta Adresi</label>
-                    <input type="email" name="email" class="form-control" placeholder="ornek@verytech.com.tr" required autocomplete="off">
+        <div class="login-card">
+            <div class="logo-container">
+                <img src="${logoUrl}" alt="Verytech">
+            </div>
+            <h1 class="brand-title">Verytech</h1>
+            <p class="brand-subtitle">Warranty Follow</p>
+            <p class="brand-desc">Hesabınıza giriş yapın</p>
+            <form action="/login" method="POST" class="form-area">
+                <div class="form-group">
+                    <label class="form-label">E-Posta Adresi</label>
+                    <input type="email" name="email" class="form-input" placeholder="ornek@verytech.com.tr" required autocomplete="off">
                 </div>
-                <div class="mb-3 text-start">
-                    <label class="form-label text-secondary small fw-bold">Şifre</label>
-                    <input type="password" name="password" class="form-control" required>
+                <div class="form-group">
+                    <label class="form-label">Şifre</label>
+                    <input type="password" name="password" class="form-input" placeholder="••••••••" required>
                 </div>
-                <div class="text-end mb-4">
-                    <a href="/sifremi-unuttum" class="text-warning small text-decoration-none fw-semibold">Şifremi Unuttum?</a>
+                <div class="forgot-link">
+                    <a href="/sifremi-unuttum">Şifremi Unuttum?</a>
                 </div>
-                <button type="submit" class="btn btn-primary w-100 fw-bold py-2 mb-3">Giriş Yap</button>
-                <div class="text-center">
-                    <a href="/kayit-ol" class="text-info small text-decoration-none fw-semibold">✨ Yalnızca Verytech Çalışanı! Kayıt Olun</a>
+                <button type="submit" class="btn-submit">Giriş Yap</button>
+                <div class="register-link">
+                    <a href="/kayit-ol">✨ Yalnızca Verytech Çalışanı! Kayıt Olun</a>
                 </div>
             </form>
         </div>
+        <div class="footer-custom">©2026 - Designed By <span>Kerim KAPLAN</span></div>
     </body>
     </html>`);
 });
@@ -124,28 +263,50 @@ app.get('/sifremi-unuttum', (req, res) => {
     <html lang="tr">
     <head>
         <meta charset="UTF-8">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <title>Verytech - Şifremi Unuttum</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Verytech Warranty Follow - Şifremi Unuttum</title>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg">
         <style>
-            body { background-color: #0f172a; height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'Segoe UI', sans-serif; }
-            .login-card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-            .form-control { background: #0f172a; border-color: #475569; color: #fff; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { min-height: 100vh; display: flex; align-items: center; justify-content: center; background-color: #0f172a; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; padding: 1rem; }
+            .login-card { width: 100%; max-width: 400px; background: #1e293b; border: 1px solid #334155; border-radius: 1.125rem; padding: 2.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center; }
+            .logo-container { display: flex; justify-content: center; margin-bottom: 1.5rem; }
+            .logo-container img { width: 140px; height: auto; object-fit: contain; }
+            .card-title { font-size: 1.25rem; line-height: 1.4; font-weight: 700; color: #ffffff; margin-bottom: 0.5rem; }
+            .card-desc { font-size: 0.875rem; line-height: 1.429; color: #90a1b9; margin-bottom: 1.5rem; }
+            .form-group { text-align: left; margin-bottom: 1rem; }
+            .form-label { display: block; font-size: 0.75rem; line-height: 1.333; font-weight: 600; color: #90a1b9; margin-bottom: 0.375rem; }
+            .form-input { width: 100%; padding: 0.625rem 1rem; border-radius: 0.625rem; background: #0f172a; border: 1px solid #475569; color: #ffffff; font-size: 0.875rem; line-height: 1.429; font-family: inherit; outline: none; transition: all 0.2s ease; }
+            .form-input::placeholder { color: #64748b; }
+            .form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
+            .btn-submit { width: 100%; padding: 0.625rem; border: none; border-radius: 0.625rem; background: #fcbb00; color: #1e293b; font-size: 0.875rem; line-height: 1.429; font-weight: 700; font-family: inherit; cursor: pointer; transition: background 0.2s; }
+            .btn-submit:hover { background: #ffd236; }
+            .back-link { display: block; text-align: center; margin-top: 1rem; }
+            .back-link a { color: #90a1b9; text-decoration: none; font-size: 0.875rem; line-height: 1.429; transition: color 0.2s; }
+            .back-link a:hover { color: #e2e8f0; }
+            .footer-custom { text-align: center; padding: 1.5rem; color: #475569; font-size: 0.75rem; }
+            .footer-custom span { color: #64748b; font-weight: 600; }
         </style>
     </head>
     <body>
-        <div class="login-card text-center">
-            <img src="${logoUrl}" alt="Verytech" style="height: 30px; margin-bottom: 2rem;">
-            <h5 class="text-white fw-bold mb-3">Şifremi Unuttum</h5>
-            <p class="text-secondary small mb-4">Şifrenizi sıfırlamak için @verytech.com.tr uzantılı mail adresinizi girin.</p>
+        <div class="login-card">
+            <div class="logo-container">
+                <img src="${logoUrl}" alt="Verytech">
+            </div>
+            <h2 class="card-title">Şifremi Unuttum</h2>
+            <p class="card-desc">Şifrenizi sıfırlamak için @verytech.com.tr uzantılı mail adresinizi girin.</p>
             <form action="/sifremi-unuttum" method="POST">
-                <div class="mb-4 text-start">
-                    <label class="form-label text-secondary small fw-bold">E-Posta Adresi</label>
-                    <input type="email" name="email" class="form-control" placeholder="ad.soyad@verytech.com.tr" required>
+                <div class="form-group">
+                    <label class="form-label">E-Posta Adresi</label>
+                    <input type="email" name="email" class="form-input" placeholder="ad.soyad@verytech.com.tr" required>
                 </div>
-                <button type="submit" class="btn btn-warning text-dark w-100 fw-bold py-2 mb-3">Şifre Sıfırlama Kodu Gönder ✉️</button>
-                <a href="/" class="text-secondary small text-decoration-none">Geri Dön</a>
+                <button type="submit" class="btn-submit">Şifre Sıfırlama Kodu Gönder</button>
             </form>
+            <div class="back-link">
+                <a href="/">Geri Dön</a>
+            </div>
         </div>
+        <div class="footer-custom">©2026 - Designed By <span>Kerim KAPLAN</span></div>
     </body>
     </html>`);
 });
@@ -180,10 +341,10 @@ app.post('/sifremi-unuttum', async (req, res) => {
 
     try {
         await transporter.sendMail({
-            from: '"Verytech Garanti Takip Sistemi" <cinarcikofficial@gmail.com>',
+            from: '"Verytech Warranty Follow" <cinarcikofficial@gmail.com>',
             to: temizEmail,
             subject: '🔒 Verytech Şifre Sıfırlama Onay Kodu',
-            html: `<h3>Verytech Garanti Takip Sistemi</h3><p>Şifrenizi güvenli bir şekilde sıfırlamak için kullanacağınız tek kullanımlık onay kodu aşağıdadır:</p><h2 style="color:#f59e0b; letter-spacing:4px;">${dogrulamaKodu}</h2><p>Eğer bu talebi siz yapmadıysanız bu maili dikkate almayınız.</p>`
+            html: `<h3>Verytech Warranty Follow</h3><p>Şifrenizi güvenli bir şekilde sıfırlamak için kullanacağınız tek kullanımlık onay kodu aşağıdadır:</p><h2 style="color:#f59e0b; letter-spacing:4px;">${dogrulamaKodu}</h2><p>Eğer bu talebi siz yapmadıysanız bu maili dikkate almayınız.</p>`
         });
         
         res.redirect(`/kod-onayla?email=${encodeURIComponent(temizEmail)}`);
@@ -199,28 +360,50 @@ app.get('/kayit-ol', (req, res) => {
     <html lang="tr">
     <head>
         <meta charset="UTF-8">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <title>Verytech - Yeni Çalışan Kaydı</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Verytech Warranty Follow - Çalışan Kaydı</title>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg">
         <style>
-            body { background-color: #0f172a; height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'Segoe UI', sans-serif; }
-            .login-card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-            .form-control { background: #0f172a; border-color: #475569; color: #fff; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { min-height: 100vh; display: flex; align-items: center; justify-content: center; background-color: #0f172a; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; padding: 1rem; }
+            .login-card { width: 100%; max-width: 400px; background: #1e293b; border: 1px solid #334155; border-radius: 1.125rem; padding: 2.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center; }
+            .logo-container { display: flex; justify-content: center; margin-bottom: 1.5rem; }
+            .logo-container img { width: 140px; height: auto; object-fit: contain; }
+            .card-title { font-size: 1.25rem; line-height: 1.4; font-weight: 700; color: #ffffff; margin-bottom: 0.5rem; }
+            .card-desc { font-size: 0.875rem; line-height: 1.429; color: #90a1b9; margin-bottom: 1.5rem; }
+            .form-group { text-align: left; margin-bottom: 1rem; }
+            .form-label { display: block; font-size: 0.75rem; line-height: 1.333; font-weight: 600; color: #90a1b9; margin-bottom: 0.375rem; }
+            .form-input { width: 100%; padding: 0.625rem 1rem; border-radius: 0.625rem; background: #0f172a; border: 1px solid #475569; color: #ffffff; font-size: 0.875rem; line-height: 1.429; font-family: inherit; outline: none; transition: all 0.2s ease; }
+            .form-input::placeholder { color: #64748b; }
+            .form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
+            .btn-submit { width: 100%; padding: 0.625rem; border: none; border-radius: 0.625rem; background: #00d2ef; color: #ffffff; font-size: 0.875rem; line-height: 1.429; font-weight: 700; font-family: inherit; cursor: pointer; transition: background 0.2s; }
+            .btn-submit:hover { background: #67e8f9; }
+            .back-link { display: block; text-align: center; margin-top: 1rem; }
+            .back-link a { color: #90a1b9; text-decoration: none; font-size: 0.875rem; line-height: 1.429; transition: color 0.2s; }
+            .back-link a:hover { color: #e2e8f0; }
+            .footer-custom { text-align: center; padding: 1.5rem; color: #475569; font-size: 0.75rem; }
+            .footer-custom span { color: #64748b; font-weight: 600; }
         </style>
     </head>
     <body>
-        <div class="login-card text-center">
-            <img src="${logoUrl}" alt="Verytech" style="height: 30px; margin-bottom: 2rem;">
-            <h5 class="text-white fw-bold mb-3">Çalışan Kayıt Paneli</h5>
-            <p class="text-secondary small mb-4">Sadece @verytech.com.tr uzantılı mailler ile kayıt yapılabilir. Mailinize bir doğrulama kodu gönderilecektir.</p>
+        <div class="login-card">
+            <div class="logo-container">
+                <img src="${logoUrl}" alt="Verytech">
+            </div>
+            <h2 class="card-title">Çalışan Kayıt Paneli</h2>
+            <p class="card-desc">Sadece @verytech.com.tr uzantılı mailler ile kayıt yapılabilir. Mailinize bir doğrulama kodu gönderilecektir.</p>
             <form action="/kayit-ol" method="POST">
-                <div class="mb-4 text-start">
-                    <label class="form-label text-secondary small fw-bold">Kurumsal E-Posta</label>
-                    <input type="email" name="email" class="form-control" placeholder="ad.soyad@verytech.com.tr" required>
+                <div class="form-group">
+                    <label class="form-label">Kurumsal E-Posta</label>
+                    <input type="email" name="email" class="form-input" placeholder="ad.soyad@verytech.com.tr" required>
                 </div>
-                <button type="submit" class="btn btn-info text-white w-100 fw-bold py-2 mb-3">Doğrulama Kodu Gönder ✉️</button>
-                <a href="/" class="text-secondary small text-decoration-none">Geri Dön</a>
+                <button type="submit" class="btn-submit">Doğrulama Kodu Gönder</button>
             </form>
+            <div class="back-link">
+                <a href="/">Geri Dön</a>
+            </div>
         </div>
+        <div class="footer-custom">©2026 - Designed By <span>Kerim KAPLAN</span></div>
     </body>
     </html>`);
 });
@@ -251,10 +434,10 @@ app.post('/kayit-ol', async (req, res) => {
 
     try {
         await transporter.sendMail({
-            from: '"Verytech Garanti Takip Sistemi" <cinarcikofficial@gmail.com>',
+            from: '"Verytech Warranty Follow" <cinarcikofficial@gmail.com>',
             to: temizEmail,
             subject: '🔑 Verytech Sistem Giriş Onay Kodu',
-            html: `<h3>Verytech Garanti Takip Sistemi</h3><p>Sisteme kayıt olabilmek veya şifrenizi yenilemek için kullanacağınız tek kullanımlık onay kodu aşağıdadır:</p><h2 style="color:#0284c7; letter-spacing:4px;">${dogrulamaKodu}</h2><p>Bu kodu kimseyle paylaşmayınız.</p>`
+            html: `<h3>Verytech Warranty Follow</h3><p>Sisteme kayıt olabilmek veya şifrenizi yenilemek için kullanacağınız tek kullanımlık onay kodu aşağıdadır:</p><h2 style="color:#0284c7; letter-spacing:4px;">${dogrulamaKodu}</h2><p>Bu kodu kimseyle paylaşmayınız.</p>`
         });
         res.redirect(`/kod-onayla?email=${encodeURIComponent(temizEmail)}`);
     } catch (mailErr) {
@@ -270,26 +453,39 @@ app.get('/kod-onayla', (req, res) => {
     <html lang="tr">
     <head>
         <meta charset="UTF-8">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <title>Verytech - Kod Onay</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Verytech Warranty Follow - Kod Onay</title>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg">
         <style>
-            body { background-color: #0f172a; height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'Segoe UI', sans-serif; }
-            .login-card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-            .form-control { background: #0f172a; border-color: #475569; color: #fff; text-align:center; font-size: 20px; letter-spacing: 5px; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { min-height: 100vh; display: flex; align-items: center; justify-content: center; background-color: #0f172a; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; padding: 1rem; }
+            .login-card { width: 100%; max-width: 400px; background: #1e293b; border: 1px solid #334155; border-radius: 1.125rem; padding: 2.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center; }
+            .card-title { font-size: 1.25rem; line-height: 1.4; font-weight: 700; color: #ffffff; margin-bottom: 0.5rem; }
+            .card-desc { font-size: 0.875rem; line-height: 1.429; color: #90a1b9; margin-bottom: 1.5rem; }
+            .card-desc b { color: #e2e8f0; }
+            .form-group { text-align: center; margin-bottom: 1rem; }
+            .form-input { width: 100%; padding: 0.75rem 1rem; border-radius: 0.625rem; background: #0f172a; border: 1px solid #475569; color: #ffffff; font-size: 1.25rem; line-height: 1.4; font-family: inherit; outline: none; transition: all 0.2s ease; text-align: center; letter-spacing: 5px; }
+            .form-input::placeholder { color: #64748b; letter-spacing: 2px; }
+            .form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
+            .btn-submit { width: 100%; padding: 0.625rem; border: none; border-radius: 0.625rem; background: #22c55e; color: #ffffff; font-size: 0.875rem; line-height: 1.429; font-weight: 700; font-family: inherit; cursor: pointer; transition: background 0.2s; }
+            .btn-submit:hover { background: #4ade80; }
+            .footer-custom { text-align: center; padding: 1.5rem; color: #475569; font-size: 0.75rem; }
+            .footer-custom span { color: #64748b; font-weight: 600; }
         </style>
     </head>
     <body>
-        <div class="login-card text-center">
-            <h5 class="text-white fw-bold mb-3">Onay Kodunu Girin</h5>
-            <p class="text-secondary small mb-4"><b>${email}</b> adresine gönderilen 6 haneli kodu yazın.</p>
+        <div class="login-card">
+            <h2 class="card-title">Onay Kodunu Girin</h2>
+            <p class="card-desc"><b>${email}</b> adresine gönderilen 6 haneli kodu yazın.</p>
             <form action="/kod-onayla" method="POST">
                 <input type="hidden" name="email" value="${email}">
-                <div class="mb-4">
-                    <input type="text" name="kod" class="form-control" maxlength="6" required autocomplete="off" placeholder="000000">
+                <div class="form-group">
+                    <input type="text" name="kod" class="form-input" maxlength="6" required autocomplete="off" placeholder="000000">
                 </div>
-                <button type="submit" class="btn btn-success w-100 fw-bold py-2">Kodu Doğrula ✅</button>
+                <button type="submit" class="btn-submit">Kodu Doğrula</button>
             </form>
         </div>
+        <div class="footer-custom">©2026 - Designed By <span>Kerim KAPLAN</span></div>
     </body>
     </html>`);
 });
@@ -318,28 +514,41 @@ app.get('/sifre-belirle', (req, res) => {
     <html lang="tr">
     <head>
         <meta charset="UTF-8">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <title>Verytech - Şifre Belirle</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Verytech Warranty Follow - Şifre Belirle</title>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg">
         <style>
-            body { background-color: #0f172a; height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'Segoe UI', sans-serif; }
-            .login-card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-            .form-control { background: #0f172a; border-color: #475569; color: #fff; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { min-height: 100vh; display: flex; align-items: center; justify-content: center; background-color: #0f172a; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; padding: 1rem; }
+            .login-card { width: 100%; max-width: 400px; background: #1e293b; border: 1px solid #334155; border-radius: 1.125rem; padding: 2.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center; }
+            .card-title { font-size: 1.25rem; line-height: 1.4; font-weight: 700; color: #ffffff; margin-bottom: 0.5rem; }
+            .card-desc { font-size: 0.875rem; line-height: 1.429; color: #90a1b9; margin-bottom: 1.5rem; }
+            .form-group { text-align: left; margin-bottom: 1rem; }
+            .form-label { display: block; font-size: 0.75rem; line-height: 1.333; font-weight: 600; color: #90a1b9; margin-bottom: 0.375rem; }
+            .form-input { width: 100%; padding: 0.625rem 1rem; border-radius: 0.625rem; background: #0f172a; border: 1px solid #475569; color: #ffffff; font-size: 0.875rem; line-height: 1.429; font-family: inherit; outline: none; transition: all 0.2s ease; }
+            .form-input::placeholder { color: #64748b; }
+            .form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
+            .btn-submit { width: 100%; padding: 0.625rem; border: none; border-radius: 0.625rem; background: #2563eb; color: #ffffff; font-size: 0.875rem; line-height: 1.429; font-weight: 700; font-family: inherit; cursor: pointer; transition: background 0.2s; }
+            .btn-submit:hover { background: #3b82f6; }
+            .footer-custom { text-align: center; padding: 1.5rem; color: #475569; font-size: 0.75rem; }
+            .footer-custom span { color: #64748b; font-weight: 600; }
         </style>
     </head>
     <body>
-        <div class="login-card text-center">
-            <h5 class="text-white fw-bold mb-3">Yeni Şifre Oluştur</h5>
-            <p class="text-secondary small mb-4">Sisteme girerken kullanacağınız güvenli bir şifre belirleyin.</p>
+        <div class="login-card">
+            <h2 class="card-title">Yeni Şifre Oluştur</h2>
+            <p class="card-desc">Sisteme girerken kullanacağınız güvenli bir şifre belirleyin.</p>
             <form action="/sifre-belirle" method="POST">
                 <input type="hidden" name="email" value="${email}">
                 <input type="hidden" name="token" value="${token}">
-                <div class="mb-4 text-start">
-                    <label class="form-label text-secondary small fw-bold">Yeni Şifre</label>
-                    <input type="password" name="password" class="form-control" required placeholder="••••••">
+                <div class="form-group">
+                    <label class="form-label">Yeni Şifre</label>
+                    <input type="password" name="password" class="form-input" required placeholder="••••••">
                 </div>
-                <button type="submit" class="btn btn-primary w-100 fw-bold py-2">Şifreyi Kaydet ve Giriş Yap 🚀</button>
+                <button type="submit" class="btn-submit">Şifreyi Kaydet ve Giriş Yap</button>
             </form>
         </div>
+        <div class="footer-custom">©2026 - Designed By <span>Kerim KAPLAN</span></div>
     </body>
     </html>`);
 });
@@ -428,13 +637,13 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
         musteriListesi.forEach((m, idx) => {
             musteriSatirlari += `
             <tr>
-                <td class="fw-bold text-secondary" style="width: 5%;">${idx + 1}</td>
-                <td><a href="/detay?type=musteri&q=${encodeURIComponent(m)}" class="fw-bold text-dark text-decoration-none" style="cursor: pointer;">🏢 ${m}</a></td>
+                <td style="width: 5%; color: #64748b; font-weight: 600;">${idx + 1}</td>
+                <td><a href="/detay?type=musteri&q=${encodeURIComponent(m)}" class="fw-bold text-decoration-none" style="color: #e2e8f0; cursor: pointer;">🏢 ${m}</a></td>
                 <td>
-                    <a href="/detay?type=musteri&q=${encodeURIComponent(m)}" class="badge bg-blue shadow-sm text-white px-3 py-2 rounded-pill fw-bold text-decoration-none" style="background-color: #0284c7; display: inline-block;">📊 ${musteriMap[m]} Adet Ürün</a>
+                    <a href="/detay?type=musteri&q=${encodeURIComponent(m)}" class="text-decoration-none" style="display: inline-block; background: #0284c7; color: #fff; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 9999px;">📊 ${musteriMap[m]} Adet Ürün</a>
                 </td>
                 <td class="text-end" style="width: 15%;">
-                    <a href="/detay?type=musteri&q=${encodeURIComponent(m)}" class="btn btn-sm btn-flat-blue fw-bold shadow-sm">Ayrı Sayfada Gör 📂</a>
+                    <a href="/detay?type=musteri&q=${encodeURIComponent(m)}" class="btn-outline-blue">Ayrı Sayfada Gör</a>
                 </td>
             </tr>`;
         });
@@ -450,20 +659,16 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
             const t2 = Date.UTC(bitisTarihi.getFullYear(), bitisTarihi.getMonth(), bitisTarihi.getDate());
             const kalanGun = Math.floor((t2 - t1) / (1000 * 60 * 60 * 24));
             
-            let satirSinifi = ""; 
-            let durumMetni = `<span class="badge bg-success shadow-sm text-white px-3 py-2 rounded-pill fw-bold" style="background-color: #10b981;">🟢 Güvenli (${kalanGun} Gün)</span>`;
+            let durumMetni = `<span class="badge-safe">🟢 Güvenli (${kalanGun} Gün)</span>`;
             
             if (urun.arsivlendi) {
-                satirSinifi = "table-secondary-custom";
-                durumMetni = `<span class="badge bg-secondary shadow-sm text-white px-3 py-2 rounded-pill fw-bold">📦 Arşivlendi</span>`;
+                durumMetni = `<span class="badge-archive">📦 Arşivlendi</span>`;
             }
             else if (kalanGun < 0) { 
-                satirSinifi = "table-danger-custom"; 
-                durumMetni = `<span class="badge bg-danger shadow-sm text-white px-3 py-2 rounded-pill fw-bold" style="background-color: #ef4444;">🔴 Süre Doldu</span>`; 
+                durumMetni = `<span class="badge-expired">🔴 Süre Doldu</span>`; 
             }
             else if (kalanGun <= 30) { 
-                satirSinifi = "table-warning-custom"; 
-                durumMetni = `<span class="badge bg-warning shadow-sm text-dark px-3 py-2 rounded-pill fw-bold" style="background-color: #f59e0b;">⚠️ Kritik! (${kalanGun} Gün)</span>`; 
+                durumMetni = `<span class="badge-crit">⚠️ Kritik! (${kalanGun} Gün)</span>`; 
             }
 
             const uAdi = (urun.urun_adi || "").replace(/"/g, '&quot;').replace(/'/g, "&#39;");
@@ -471,22 +676,22 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
             const sNo = (urun.seri_no || "").replace(/"/g, '&quot;').replace(/'/g, "&#39;");
             const mAdi = (urun.musteri_adi || "").replace(/"/g, '&quot;').replace(/'/g, "&#39;");
 
-            let markaGosterim = `<span class="text-muted fw-normal">-</span>`;
+            let markaGosterim = `<span style="color: #64748b;">-</span>`;
             if (markaAdi && markaAdi !== "-") {
-                markaGosterim = `<a href="/detay?type=marka&q=${encodeURIComponent(markaAdi)}" class="badge shadow-sm text-white px-3 py-1.5 rounded fw-bold text-decoration-none" style="background-color: #6d28d9; display: inline-block;" title="Bu markayı ayrı sayfada gör">${markaAdi}</a>`;
+                markaGosterim = `<a href="/detay?type=marka&q=${encodeURIComponent(markaAdi)}" class="badge-purple text-decoration-none" title="Bu markayı ayrı sayfada gör">${markaAdi}</a>`;
             }
 
             urunSatirlari += `
-            <tr class="${satirSinifi}">
-                <td><a href="/detay?type=musteri&q=${encodeURIComponent(urun.musteri_adi || '')}" class="text-dark fw-bold text-decoration-none">🏢 ${urun.musteri_adi || ''}</a></td>
+            <tr>
+                <td><a href="/detay?type=musteri&q=${encodeURIComponent(urun.musteri_adi || '')}" class="fw-bold text-decoration-none" style="color: #e2e8f0;">🏢 ${urun.musteri_adi || ''}</a></td>
                 <td>${markaGosterim}</td>
-                <td><b class="text-secondary">${urun.urun_adi || ''}</b></td>
-                <td><code class="text-primary fw-semibold">${urun.seri_no || ''}</code></td>
-                <td data-order="${urun.garanti_baslangic || ''}" class="text-muted">${tarihFormatla(urun.garanti_baslangic)}</td>
-                <td data-order="${urun.garanti_bitis || ''}" class="fw-semibold">${tarihFormatla(urun.garanti_bitis)}</td>
+                <td style="color: #cbd5e1;">${urun.urun_adi || ''}</td>
+                <td><span class="text-code">${urun.seri_no || ''}</span></td>
+                <td data-order="${urun.garanti_baslangic || ''}" style="color: #94a3b8;">${tarihFormatla(urun.garanti_baslangic)}</td>
+                <td data-order="${urun.garanti_bitis || ''}" style="color: #e2e8f0; font-weight: 600;">${tarihFormatla(urun.garanti_bitis)}</td>
                 <td data-order="${kalanGun}">${durumMetni}</td>
                 <td class="text-end text-nowrap">
-                    <button class="btn btn-sm btn-outline-purple fw-bold me-1 j-duzenle" 
+                    <button class="btn-outline-purple me-1 j-duzenle" 
                             data-id="${urun.id}" 
                             data-urun="${uAdi}" 
                             data-marka="${markaAdi}"
@@ -496,11 +701,11 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
                             data-bitis="${urun.garanti_bitis}"
                             data-not="${urun.note || ''}">✏️ Düzenle</button>
                     ${urun.arsivlendi 
-                        ? '<button class="btn btn-sm btn-outline-success fw-bold me-1 j-aktif" data-id="' + urun.id + '">🔄 Aktif Hale Getir</button>'
-                        : '<button class="btn btn-sm btn-outline-warning fw-bold me-1 j-arsivle" data-id="' + urun.id + '">📦 Arşivle</button>'}
-                    <button class="btn btn-sm btn-outline-danger fw-bold j-sil" data-id="${urun.id}">🗑️ Sil</button>
+                        ? '<button class="btn-outline-green me-1 j-aktif" data-id="' + urun.id + '">🔄 Aktif Hale Getir</button>'
+                        : '<button class="btn-outline-warn me-1 j-arsivle" data-id="' + urun.id + '">📦 Arşivle</button>'}
+                    <button class="btn-outline-red j-sil" data-id="${urun.id}">🗑️ Sil</button>
                 </td>
-                <td class="text-center">${urun.note ? '<button class="btn btn-sm btn-outline-secondary rounded-circle j-not" data-not-idx="' + (notDizisi.length - 1) + '" title="Not">📝</button>' : ''}</td>
+                <td class="text-center">${urun.note ? '<button class="btn-sm-dark j-not" data-not-idx="' + (notDizisi.length - 1) + '" title="Not">📝</button>' : ''}</td>
             </tr>`;
         });
     }
@@ -516,22 +721,109 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
         <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-        <title>Verytech - Yönetim Paneli</title>
+        <title>Verytech Warranty Follow - Yönetim Paneli</title>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg">
         <style>
-            body { background-color: #f1f5f9; font-family: 'Segoe UI', sans-serif; }
-            th { font-weight: 600; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
-            .card-custom-green { border: 1px solid #cbf3d6; border-left: 6px solid #10b981; background-color: #f0fdf4; border-radius: 12px; }
-            .card-custom-blue { border: 1px solid #bae6fd; border-left: 6px solid #0284c7; background-color: #f0f9ff; border-radius: 12px; }
-            .card-custom-purple { border: 1px solid #e9d5ff; border-left: 6px solid #6d28d9; background-color: #faf5ff; border-radius: 12px; }
-            .card-custom-blue .table, .card-custom-blue .table tr, .card-custom-blue .table td { background-color: #f0f9ff !important; border-color: #e0f2fe !important; }
-            .card-custom-purple .table, .card-custom-purple .table tr, .card-custom-purple .table td { background-color: #faf5ff !important; border-color: #f3e8ff !important; }
-            .table-light th { background-color: rgba(0, 0, 0, 0.04) !important; color: #334155 !important; border-bottom: 2px solid rgba(0,0,0,0.08) !important; }
-            .btn-outline-purple { color: #6d28d9; border-color: #6d28d9; background-color: #ffffff; }
-            .btn-outline-purple:hover { color: #fff; background-color: #6d28d9; border-color: #6d28d9; }
-            .btn-flat-blue { color: #0284c7; background-color: #ffffff; border: 1px solid #0284c7; }
-            .btn-flat-blue:hover { color: #ffffff; background-color: #0284c7; }
-            .navbar-custom { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
-            .form-control, .form-select { border-color: #cbd5e1; padding: 0.6rem 0.75rem; font-size: 14px; border-radius: 8px; }
+            body { background-color: #0f172a; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+            .navbar-custom { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-bottom: 1px solid #334155; }
+            .navbar-brand-custom { font-size: 0.875rem; font-weight: 700; color: #ffffff; letter-spacing: 0.05em; text-decoration: none; }
+            .navbar-brand-custom:hover { color: #e2e8f0; }
+            .user-pill { background: rgba(51, 65, 85, 0.5); color: #ffffff; font-size: 0.8rem; padding: 0.375rem 0.75rem; border-radius: 9999px; }
+            .user-pill a { color: #fcbb00; text-decoration: none; font-weight: 700; margin-left: 0.5rem; }
+            .user-pill a:hover { color: #ffd236; }
+            .card-dark { background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+            .card-dark-green { border-left: 6px solid #10b981; }
+            .card-dark-blue { border-left: 6px solid #0284c7; }
+            .card-dark-purple { border-left: 6px solid #6d28d9; }
+            .card-title-green { font-size: 1rem; font-weight: 700; color: #10b981; margin-bottom: 1rem; }
+            .card-title-blue { font-size: 1rem; font-weight: 700; color: #0284c7; margin-bottom: 1rem; }
+            .card-title-purple { font-size: 1rem; font-weight: 700; color: #a78bfa; margin-bottom: 1rem; }
+            .form-label-dark { font-size: 0.75rem; font-weight: 600; color: #94a3b8; margin-bottom: 0.375rem; }
+            .form-input-dark { width: 100%; padding: 0.5rem 0.75rem; border-radius: 0.5rem; background: #0f172a; border: 1px solid #475569; color: #ffffff; font-size: 0.875rem; font-family: inherit; outline: none; transition: all 0.2s ease; }
+            .form-input-dark::placeholder { color: #64748b; }
+            .form-input-dark:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
+            .form-select-dark { width: 100%; padding: 0.5rem 0.75rem; border-radius: 0.5rem; background: #0f172a; border: 1px solid #475569; color: #ffffff; font-size: 0.875rem; font-family: inherit; outline: none; appearance: auto; }
+            .form-check-input-dark { background-color: #0f172a; border-color: #475569; }
+            .form-check-input-dark:checked { background-color: #3b82f6; border-color: #3b82f6; }
+            .form-check-label-dark { font-size: 0.8rem; font-weight: 600; color: #e2e8f0; cursor: pointer; }
+            .btn-green { background: #10b981; color: #ffffff; font-size: 0.875rem; font-weight: 700; padding: 0.5rem 1.5rem; border: none; border-radius: 0.5rem; cursor: pointer; transition: background 0.2s; }
+            .btn-green:hover { background: #34d399; }
+            .btn-outline-blue { color: #0284c7; border: 1px solid #0284c7; background: transparent; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 0.5rem; cursor: pointer; text-decoration: none; display: inline-block; transition: all 0.2s; }
+            .btn-outline-blue:hover { background: #0284c7; color: #ffffff; }
+            .btn-outline-purple { color: #a78bfa; border: 1px solid #6d28d9; background: transparent; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s; }
+            .btn-outline-purple:hover { background: #6d28d9; color: #ffffff; }
+            .btn-outline-warn { color: #fbbf24; border: 1px solid #f59e0b; background: transparent; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s; }
+            .btn-outline-warn:hover { background: #f59e0b; color: #1e293b; }
+            .btn-outline-red { color: #f87171; border: 1px solid #ef4444; background: transparent; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s; }
+            .btn-outline-red:hover { background: #ef4444; color: #ffffff; }
+            .btn-outline-green { color: #34d399; border: 1px solid #10b981; background: transparent; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s; }
+            .btn-outline-green:hover { background: #10b981; color: #ffffff; }
+            .table-dark-custom { width: 100%; border-collapse: collapse; }
+            .table-dark-custom th { background: rgba(51, 65, 85, 0.3); color: #94a3b8; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.625rem 0.75rem; border-bottom: 1px solid #334155; text-align: left; }
+            .table-dark-custom td { padding: 0.625rem 0.75rem; border-bottom: 1px solid rgba(51,65,85,0.3); color: #e2e8f0; font-size: 0.875rem; vertical-align: middle; }
+            .table-dark-custom tr:hover td { background: rgba(51, 65, 85, 0.2); }
+            .badge-safe { background: #10b981; color: #ffffff; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 9999px; }
+            .badge-crit { background: #f59e0b; color: #1e293b; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 9999px; }
+            .badge-expired { background: #ef4444; color: #ffffff; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 9999px; }
+            .badge-archive { background: #64748b; color: #ffffff; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 9999px; }
+            .badge-purple { background: #6d28d9; color: #ffffff; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 0.375rem; }
+            .text-code { font-family: 'Courier New', monospace; color: #38bdf8; font-weight: 600; }
+            .section-divider { width: 1px; height: 25px; background: rgba(255,255,255,0.2); }
+            .modal-content-dark { background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; }
+            .modal-header-dark { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-bottom: 1px solid #334155; border-radius: 0.75rem 0.75rem 0 0; padding: 1rem 1.5rem; }
+            .modal-body-dark { padding: 1.5rem; }
+            .modal-footer-dark { background: #0f172a; border-top: 1px solid #334155; border-radius: 0 0 0.75rem 0.75rem; padding: 1rem 1.5rem; }
+            .btn-close-dark { filter: invert(1); }
+            .btn-sm-dark { font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.625rem; border-radius: 0.375rem; border: 1px solid #475569; background: transparent; color: #94a3b8; cursor: pointer; transition: all 0.2s; }
+            .btn-sm-dark:hover { background: #334155; color: #ffffff; }
+            .btn-sm-primary { border-color: #3b82f6; color: #3b82f6; }
+            .btn-sm-primary:hover { background: #3b82f6; color: #ffffff; }
+            .form-label { font-size: 0.75rem; font-weight: 600; color: #94a3b8; }
+            /* DataTable Dark Theme */
+            div.dataTables_wrapper { color: #e2e8f0; font-size: 0.8rem; }
+            .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter { color: #94a3b8; }
+            .dataTables_wrapper .dataTables_length select, 
+            .dataTables_wrapper .dataTables_filter input { 
+                background: #0f172a; border: 1px solid #475569; color: #ffffff; 
+                padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-size: 0.8rem; 
+            }
+            .dataTables_wrapper .dataTables_length select:focus, 
+            .dataTables_wrapper .dataTables_filter input:focus { 
+                border-color: #3b82f6; outline: none; 
+            }
+            .dataTables_wrapper .dataTables_paginate { padding-top: 0.5rem; text-align: right; }
+            .dataTables_wrapper .dataTables_paginate .paginate_button { 
+                display: inline-flex; align-items: center; justify-content: center;
+                min-width: 32px; height: 32px;
+                color: #e2e8f0 !important; background: #1e293b !important; 
+                border: 1px solid #334155 !important; border-radius: 0.375rem !important; 
+                margin: 0 2px; padding: 0.25rem 0.5rem; font-size: 0.8rem; line-height: 1;
+            }
+            .dataTables_wrapper .dataTables_paginate .paginate_button:hover { 
+                color: #ffffff !important; background: #334155 !important; 
+                border-color: #475569 !important; 
+            }
+            .dataTables_wrapper .dataTables_paginate .paginate_button.current { 
+                color: #ffffff !important; background: #3b82f6 !important; 
+                border-color: #3b82f6 !important; font-weight: 700; 
+            }
+            .dataTables_wrapper .dataTables_paginate .paginate_button.disabled { 
+                color: #475569 !important; background: transparent !important; 
+                border-color: #334155 !important; cursor: not-allowed; opacity: 0.5;
+            }
+            .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+                color: #475569 !important; background: transparent !important;
+                border-color: #334155 !important;
+            }
+            .dataTables_wrapper .dataTables_info { color: #64748b; font-size: 0.75rem; padding-top: 0.5rem; }
+            table.dataTable { border-collapse: collapse !important; }
+            table.dataTable.no-footer { border-bottom: 1px solid #334155 !important; }
+            table.dataTable thead th, table.dataTable thead td { 
+                border-bottom: 1px solid #334155 !important; padding: 0.5rem 0.625rem;
+            }
+            table.dataTable tbody td { padding: 0.5rem 0.625rem; }
+            .footer-custom { text-align: center; padding: 1.5rem; color: #64748b; font-size: 0.75rem; border-top: 1px solid #1e293b; margin-top: 1rem; }
+            .footer-custom span { color: #94a3b8; font-weight: 600; }
         </style>
     </head>
     <body>
@@ -539,61 +831,61 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
     <nav class="navbar navbar-dark navbar-custom px-4 py-3 mb-4 d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center gap-3">
             <img src="${logoUrl}" alt="Verytech" style="height: 32px; width: auto; object-fit: contain;" />
-            <div style="width: 1px; height: 25px; background: rgba(255,255,255,0.2);"></div>
-            <a href="/dashboard" class="navbar-brand fw-bold m-0" style="letter-spacing: 1.5px; font-size: 16px;">GARANTİ TAKİP SİSTEMİ</a>
+            <div class="section-divider"></div>
+            <a href="/dashboard" class="navbar-brand-custom">WARRANTY FOLLOW</a>
         </div>
-        <span class="text-white small bg-secondary bg-opacity-25 px-3 py-1.5 rounded-pill">🔒 Kullanıcı: <b>${req.session.userName}</b> | <a href="/logout" class="text-warning text-decoration-none fw-bold ms-2">Çıkış</a></span>
+        <span class="user-pill">🔒 Kullanıcı: <b>${req.session.userName}</b> | <a href="/logout">Çıkış</a></span>
     </nav>
     
     <div class="container-fluid px-4">
-        <div class="card card-custom-green p-4 mb-4">
-            <h5 class="text-success fw-bold mb-4">🟢 Yeni Satılan Ürün Kaydı</h5>
+        <div class="card-dark card-dark-green">
+            <h5 class="card-title-green">🟢 Yeni Satılan Ürün Kaydı</h5>
             <form action="/urun-ekle" method="POST">
                 <div class="row g-3 align-items-end">
                     <div class="col-xl-3 col-md-6">
                         <div class="d-flex align-items-center mb-2">
-                            <label class="form-label small fw-bold mb-0 me-3 text-secondary">Müşteri / Şirket</label>
+                            <label class="form-label-dark mb-0 me-3">Müşteri / Şirket</label>
                             <div class="d-flex gap-3">
-                                <div class="form-check m-0"><input class="form-check-input" type="radio" name="musteri_tipi" id="tipMevcut" value="mevcut" checked onclick="musteriFormuDegistir()"><label class="form-check-label small fw-semibold text-dark" for="tipMevcut">Kayıtlı</label></div>
-                                <div class="form-check m-0"><input class="form-check-input" type="radio" name="musteri_tipi" id="tipYeni" value="yeni" onclick="musteriFormuDegistir()"><label class="form-check-label small fw-semibold text-dark" for="tipYeni">Yeni</label></div>
+                                <div class="form-check m-0"><input class="form-check-input form-check-input-dark" type="radio" name="musteri_tipi" id="tipMevcut" value="mevcut" checked onclick="musteriFormuDegistir()"><label class="form-check-label-dark ms-1" for="tipMevcut">Kayıtlı</label></div>
+                                <div class="form-check m-0"><input class="form-check-input form-check-input-dark" type="radio" name="musteri_tipi" id="tipYeni" value="yeni" onclick="musteriFormuDegistir()"><label class="form-check-label-dark ms-1" for="tipYeni">Yeni</label></div>
                             </div>
                         </div>
-                        <div id="mevcutMusteriAlani"><select name="mevcut_musteri" class="form-select"><option value="">-- Şirket Seçin --</option>${mevcutMusteriSecenekleri}</select></div>
-                        <div id="yeniMusteriAlani" style="display:none;"><input type="text" name="yeni_musteri" class="form-control" placeholder="Yeni Şirket Adı Girin"></div>
+                        <div id="mevcutMusteriAlani"><select name="mevcut_musteri" class="form-select-dark"><option value="">-- Şirket Seçin --</option>${mevcutMusteriSecenekleri}</select></div>
+                        <div id="yeniMusteriAlani" style="display:none;"><input type="text" name="yeni_musteri" class="form-input-dark" placeholder="Yeni Şirket Adı Girin"></div>
                     </div>
                     
                     <div class="col-xl-2 col-md-6">
                         <div class="d-flex align-items-center mb-2">
-                            <label class="form-label small fw-bold mb-0 me-3 text-secondary">Marka</label>
+                            <label class="form-label-dark mb-0 me-3">Marka</label>
                             <div class="d-flex gap-3">
-                                <div class="form-check m-0"><input class="form-check-input" type="radio" name="marka_tipi" id="markaMevcut" value="mevcut" checked onclick="markaFormuDegistir()"><label class="form-check-label small fw-semibold text-dark" for="markaMevcut">Kayıtlı</label></div>
-                                <div class="form-check m-0"><input class="form-check-input" type="radio" name="marka_tipi" id="markaYeni" value="yeni" onclick="markaFormuDegistir()"><label class="form-check-label small fw-semibold text-dark" for="markaYeni">Yeni</label></div>
+                                <div class="form-check m-0"><input class="form-check-input form-check-input-dark" type="radio" name="marka_tipi" id="markaMevcut" value="mevcut" checked onclick="markaFormuDegistir()"><label class="form-check-label-dark ms-1" for="markaMevcut">Kayıtlı</label></div>
+                                <div class="form-check m-0"><input class="form-check-input form-check-input-dark" type="radio" name="marka_tipi" id="markaYeni" value="yeni" onclick="markaFormuDegistir()"><label class="form-check-label-dark ms-1" for="markaYeni">Yeni</label></div>
                             </div>
                         </div>
-                        <div id="mevcutMarkaAlani"><select name="mevcut_marka" class="form-select"><option value="">-- Marka Seçin --</option>${mevcutMarkaSecenekleri}</select></div>
-                        <div id="yeniMarkaAlani" style="display:none;"><input type="text" name="yeni_marka" class="form-control" placeholder="Örn: Cisco"></div>
+                        <div id="mevcutMarkaAlani"><select name="mevcut_marka" class="form-select-dark"><option value="">-- Marka Seçin --</option>${mevcutMarkaSecenekleri}</select></div>
+                        <div id="yeniMarkaAlani" style="display:none;"><input type="text" name="yeni_marka" class="form-input-dark" placeholder="Örn: Cisco"></div>
                     </div>
 
-                    <div class="col-xl-2 col-md-4 col-sm-6"><label class="form-label small fw-bold text-secondary">Ürün Adı</label><input type="text" name="urun_adi" class="form-control" placeholder="Örn: Switch" required></div>
-                    <div class="col-xl-1 col-md-4 col-sm-6"><label class="form-label small fw-bold text-secondary">Seri No</label><input type="text" name="seri_no" class="form-control" placeholder="Örn: SN-55" required></div>
-                    <div class="col-xl-2 col-md-4 col-sm-6"><label class="form-label small fw-bold text-secondary">Garanti Başlangıç</label><input type="date" name="garanti_baslangic" class="form-control" required></div>
-                    <div class="col-xl-2 col-md-4 col-sm-6"><label class="form-label small fw-bold text-secondary">Garanti Bitiş</label><input type="date" name="garanti_bitis" class="form-control" required></div>
+                    <div class="col-xl-2 col-md-4 col-sm-6"><label class="form-label-dark d-block">Ürün Adı</label><input type="text" name="urun_adi" class="form-input-dark" placeholder="Örn: Switch" required></div>
+                    <div class="col-xl-1 col-md-4 col-sm-6"><label class="form-label-dark d-block">Seri No</label><input type="text" name="seri_no" class="form-input-dark" placeholder="Örn: SN-55" required></div>
+                    <div class="col-xl-2 col-md-4 col-sm-6"><label class="form-label-dark d-block">Garanti Başlangıç</label><input type="date" name="garanti_baslangic" class="form-input-dark" required></div>
+                    <div class="col-xl-2 col-md-4 col-sm-6"><label class="form-label-dark d-block">Garanti Bitiş</label><input type="date" name="garanti_bitis" class="form-input-dark" required></div>
                     <div class="col-12 mt-4 d-flex align-items-center justify-content-between">
                         <div class="flex-grow-1 me-3">
-                            <label class="form-label small fw-bold text-secondary">Not</label>
-                            <input type="text" name="not" class="form-control" placeholder="Not (isteğe bağlı)">
+                            <label class="form-label-dark d-block">Not</label>
+                            <input type="text" name="not" class="form-input-dark" placeholder="Not (isteğe bağlı)">
                         </div>
-                        <button type="submit" class="btn btn-success px-5 fw-bold shadow-sm rounded-3 py-2">Sisteme Kaydet</button>
+                        <button type="submit" class="btn-green px-4 py-2">Sisteme Kaydet</button>
                     </div>
                 </div>
             </form>
         </div>
 
-        <div class="card card-custom-blue p-4 mb-4">
-            <h5 class="fw-bold mb-4" style="color: #0284c7;">🔵 Kayıtlı Müşteri Özet Listesi</h5>
-                        <div class="table-responsive">
-                <table id="musteriTablosu" class="table align-middle table-hover w-100 m-0">
-                    <thead class="table-light">
+        <div class="card-dark card-dark-blue">
+            <h5 class="card-title-blue">🔵 Kayıtlı Müşteri Özet Listesi</h5>
+            <div class="table-responsive">
+                <table id="musteriTablosu" class="table-dark-custom w-100 m-0">
+                    <thead>
                         <tr><th>No</th><th>Şirket Adı</th><th>Toplam Ürün Miktarı</th><th class="text-end">İşlem</th></tr>
                     </thead>
                     <tbody>${musteriSatirlari}</tbody>
@@ -601,12 +893,12 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
             </div>
         </div>
 
-        <div class="card card-custom-purple p-4 mb-4">
-            <h5 class="fw-bold mb-4" style="color:#6d28d9;">🟣 Garanti Detay Listesi (Tüm Ürünler)</h5>
+        <div class="card-dark card-dark-purple">
+            <h5 class="card-title-purple">🟣 Garanti Detay Listesi (Tüm Ürünler)</h5>
             <div class="table-responsive">
-                <table id="genelUrunTablosu" class="table align-middle table-hover w-100 m-0">
-                    <thead class="table-light">
-                        <tr><th>Müşteri / Şirket</th><th>Marka</th><th>Ürün Adı</th><th>Seri No</th><th>Başlangıç Tarihi</th><th>Bitiş Tarihi</th><th>Garanti Durumu</th><th class="text-end">İşlemler</th><th class="text-center" style="width:50px;">Not</th></tr>
+                <table id="genelUrunTablosu" class="table-dark-custom w-100 m-0">
+                    <thead>
+                        <tr><th>Müşteri</th><th>Marka</th><th>Ürün Adı</th><th>Seri No</th><th>Başlangıç</th><th>Bitiş</th><th style="min-width:170px;">Durum</th><th class="text-end">İşlemler</th><th class="text-center" style="width:40px;">Not</th></tr>
                     </thead>
                     <tbody>${urunSatirlari}</tbody>
                 </table>
@@ -614,31 +906,33 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
         </div>
     </div>
 
+    <div class="footer-custom">©2026 - Designed By <span>Kerim KAPLAN</span></div>
+
     <div class="modal fade" id="duzenleModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog">
-        <form action="/urun-duzenle" method="POST" class="modal-content style-radius">
-          <div class="modal-header navbar-custom text-white py-3"><h5 class="modal-title fw-bold fs-6">✏️ Ürün Düzenle</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-          <div class="modal-body p-4">
+        <form action="/urun-duzenle" method="POST" class="modal-content modal-content-dark">
+          <div class="modal-header modal-header-dark"><h5 class="modal-title fw-bold fs-6 text-white">✏️ Ürün Düzenle</h5><button type="button" class="btn-close btn-close-dark" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body modal-body-dark">
                 <input type="hidden" name="id" id="edit_id">
-                <div class="mb-3"><label class="form-label fw-bold small text-secondary">Müşteri / Şirket</label><input type="text" name="musteri_adi" id="edit_musteri_adi" class="form-control" required></div>
-                <div class="mb-3"><label class="form-label fw-bold small text-secondary">Marka</label><input type="text" name="edit_marka" id="edit_marka" class="form-control"></div>
-                <div class="mb-3"><label class="form-label fw-bold small text-secondary">Ürün Adı</label><input type="text" name="urun_adi" id="edit_urun_adi" class="form-control" required></div>
-                <div class="mb-3"><label class="form-label fw-bold small text-secondary">Seri No</label><input type="text" name="seri_no" id="edit_seri_no" class="form-control" required></div>
-                <div class="mb-3"><label class="form-label fw-bold small text-secondary">Garanti Başlangıç</label><input type="date" name="garanti_baslangic" id="edit_garanti_baslangic" class="form-control" required></div>
-                <div class="mb-3"><label class="form-label fw-bold small text-secondary">Garanti Bitiş</label><input type="date" name="garanti_bitis" id="edit_garanti_bitis" class="form-control" required></div>
-                <div class="mb-3"><label class="form-label fw-bold small text-secondary">Not</label><input type="text" name="not" id="edit_not" class="form-control" placeholder="Not (isteğe bağlı)"></div>
+                <div class="mb-3"><label class="form-label-dark d-block">Müşteri / Şirket</label><input type="text" name="musteri_adi" id="edit_musteri_adi" class="form-input-dark" required></div>
+                <div class="mb-3"><label class="form-label-dark d-block">Marka</label><input type="text" name="edit_marka" id="edit_marka" class="form-input-dark"></div>
+                <div class="mb-3"><label class="form-label-dark d-block">Ürün Adı</label><input type="text" name="urun_adi" id="edit_urun_adi" class="form-input-dark" required></div>
+                <div class="mb-3"><label class="form-label-dark d-block">Seri No</label><input type="text" name="seri_no" id="edit_seri_no" class="form-input-dark" required></div>
+                <div class="mb-3"><label class="form-label-dark d-block">Garanti Başlangıç</label><input type="date" name="garanti_baslangic" id="edit_garanti_baslangic" class="form-input-dark" required></div>
+                <div class="mb-3"><label class="form-label-dark d-block">Garanti Bitiş</label><input type="date" name="garanti_bitis" id="edit_garanti_bitis" class="form-input-dark" required></div>
+                <div class="mb-3"><label class="form-label-dark d-block">Not</label><input type="text" name="not" id="edit_not" class="form-input-dark" placeholder="Not (isteğe bağlı)"></div>
           </div>
-          <div class="modal-footer bg-light"><button type="button" class="btn btn-sm btn-secondary fw-bold px-3" data-bs-dismiss="modal">Vazgeç</button><button type="submit" class="btn btn-sm btn-primary fw-bold px-4">Kaydet</button></div>
+          <div class="modal-footer modal-footer-dark"><button type="button" class="btn-sm-dark" data-bs-dismiss="modal">Vazgeç</button><button type="submit" class="btn-sm-dark btn-sm-primary">Kaydet</button></div>
         </form>
       </div>
     </div>
 
     <div class="modal fade" id="notModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content style-radius">
-          <div class="modal-header navbar-custom text-white py-3"><h5 class="modal-title fw-bold fs-6">📝 Ürün Notu</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-          <div class="modal-body p-4"><p id="notIcerik" class="mb-0 text-dark"></p></div>
-          <div class="modal-footer bg-light"><button type="button" class="btn btn-sm btn-secondary fw-bold px-3" data-bs-dismiss="modal">Kapat</button></div>
+        <div class="modal-content modal-content-dark">
+          <div class="modal-header modal-header-dark"><h5 class="modal-title fw-bold fs-6 text-white">📝 Ürün Notu</h5><button type="button" class="btn-close btn-close-dark" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body modal-body-dark"><p id="notIcerik" style="color: #e2e8f0; margin: 0;"></p></div>
+          <div class="modal-footer modal-footer-dark"><button type="button" class="btn-sm-dark" data-bs-dismiss="modal">Kapat</button></div>
         </div>
       </div>
     </div>
@@ -664,8 +958,19 @@ app.get('/dashboard', oturumKontrolu, async (req, res) => {
         }
 
         $(document).ready(function() {
-            $('#musteriTablosu').DataTable({ "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json" }, "paging": true, "pageLength": 10, "lengthMenu": [10, 25, 50, 100], "info": false });
-            $('#genelUrunTablosu').DataTable({ "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json" }, "order": [[ 5, "asc" ]], "paging": true, "pageLength": 10, "info": false });
+            $('#musteriTablosu').DataTable({ 
+                "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json" }, 
+                "paging": true, "pageLength": 10, "lengthMenu": [10, 25, 50, 100], 
+                "info": false, "searching": false,
+                "dom": '<"top"flp>rt<"bottom"ip>'
+            });
+            $('#genelUrunTablosu').DataTable({ 
+                "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json" }, 
+                "order": [[ 6, "asc" ]], 
+                "paging": true, "pageLength": 10, 
+                "info": false,
+                "dom": '<"top"flp>rt<"bottom"ip>'
+            });
             
             $('#genelUrunTablosu').on('click', '.j-duzenle', function() {
                 var btn = $(this);
@@ -723,7 +1028,7 @@ app.get('/detay', oturumKontrolu, async (req, res) => {
 
     let filtreBaslik = type === 'musteri' ? `🏢 ${q} Şirketine Ait Cihazlar` : `🍇 ${q} Markalı Tüm Cihazlar`;
 
-    let detaySatirlari = "";
+        let detaySatirlari = "";
     let detayNotDizisi = [];
     filtrelenmisUrunler.forEach((urun) => {
         detayNotDizisi.push(urun.note || '');
@@ -732,32 +1037,28 @@ app.get('/detay', oturumKontrolu, async (req, res) => {
         const t2 = Date.UTC(bitisTarihi.getFullYear(), bitisTarihi.getMonth(), bitisTarihi.getDate());
         const kalanGun = Math.floor((t2 - t1) / (1000 * 60 * 60 * 24));
         
-        let satirSinifi = ""; 
-        let durumMetni = `<span class="badge bg-success px-3 py-2 rounded-pill fw-bold" style="background-color: #10b981;">🟢 Güvenli (${kalanGun} Gün)</span>`;
+        let durumMetni = `<span class="badge-safe">🟢 Güvenli (${kalanGun} Gün)</span>`;
         
         if (urun.arsivlendi) {
-            satirSinifi = "table-secondary-custom";
-            durumMetni = `<span class="badge bg-secondary px-3 py-2 rounded-pill fw-bold">📦 Arşivlendi</span>`;
+            durumMetni = `<span class="badge-archive">📦 Arşivlendi</span>`;
         }
         else if (kalanGun < 0) { 
-            satirSinifi = "table-danger-custom"; 
-            durumMetni = `<span class="badge bg-danger px-3 py-2 rounded-pill fw-bold" style="background-color: #ef4444;">🔴 Süre Doldu</span>`; 
+            durumMetni = `<span class="badge-expired">🔴 Süre Doldu</span>`; 
         }
         else if (kalanGun <= 30) { 
-            satirSinifi = "table-warning-custom"; 
-            durumMetni = `<span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold" style="background-color: #f59e0b;">⚠️ Kritik! (${kalanGun} Gün)</span>`; 
+            durumMetni = `<span class="badge-crit">⚠️ Kritik! (${kalanGun} Gün)</span>`; 
         }
 
         detaySatirlari += `
-        <tr class="${satirSinifi}">
-            <td><b>${urun.musteri_adi}</b></td>
-            <td><span class="badge text-white px-3 py-1.5 rounded fw-bold" style="background-color: #6d28d9;">${urun.marka || '-'}</span></td>
-            <td>${urun.urun_adi}</td>
-            <td><code>${urun.seri_no}</code></td>
-            <td data-order="${urun.garanti_baslangic || ''}" class="text-muted">${tarihFormatla(urun.garanti_baslangic)}</td>
-            <td data-order="${urun.garanti_bitis || ''}" class="fw-semibold">${tarihFormatla(urun.garanti_bitis)}</td>
+        <tr>
+            <td style="color: #e2e8f0; font-weight: 600;">${urun.musteri_adi}</td>
+            <td>${urun.marka && urun.marka !== '-' ? `<span class="badge-purple">${urun.marka}</span>` : `<span style="color: #64748b;">-</span>`}</td>
+            <td style="color: #cbd5e1;">${urun.urun_adi}</td>
+            <td><span class="text-code">${urun.seri_no}</span></td>
+            <td data-order="${urun.garanti_baslangic || ''}" style="color: #94a3b8;">${tarihFormatla(urun.garanti_baslangic)}</td>
+            <td data-order="${urun.garanti_bitis || ''}" style="color: #e2e8f0; font-weight: 600;">${tarihFormatla(urun.garanti_bitis)}</td>
             <td>${durumMetni}</td>
-            <td class="text-center">${urun.note ? '<button class="btn btn-sm btn-outline-secondary rounded-circle j-not" data-not-idx="' + (detayNotDizisi.length - 1) + '" title="Not">📝</button>' : ''}</td>
+            <td class="text-center">${urun.note ? '<button class="btn-sm-dark j-not" data-not-idx="' + (detayNotDizisi.length - 1) + '" title="Not">📝</button>' : ''}</td>
         </tr>`;
     });
 
@@ -772,47 +1073,72 @@ app.get('/detay', oturumKontrolu, async (req, res) => {
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-        <title>Verytech - Özel Filtre Detay Sayfası</title>
+        <title>Verytech Warranty Follow - Özel Filtre Detay Sayfası</title>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg">
         <style>
-            body { background-color: #f1f5f9; font-family: 'Segoe UI', sans-serif; }
-            .navbar-custom { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
-            .card-detay { border-top: 6px solid #6d28d9; border-radius: 12px; }
-            .table-warning-custom, .table-warning-custom td { background-color: #fefce8 !important; }
-            .table-danger-custom, .table-danger-custom td { background-color: #fef2f2 !important; }
-            .table-secondary-custom, .table-secondary-custom td { background-color: #f8f9fa !important; }
+            body { background-color: #0f172a; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+            .navbar-custom { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-bottom: 1px solid #334155; }
+            .navbar-brand-custom { font-size: 0.875rem; font-weight: 700; color: #ffffff; letter-spacing: 0.05em; }
+            .section-divider { width: 1px; height: 25px; background: rgba(255,255,255,0.2); }
+            .btn-back { background: #334155; color: #ffffff; font-size: 0.8rem; font-weight: 700; padding: 0.375rem 0.75rem; border-radius: 0.5rem; text-decoration: none; border: none; cursor: pointer; transition: background 0.2s; }
+            .btn-back:hover { background: #475569; color: #ffffff; }
+            .card-dark { background: #1e293b; border: 1px solid #334155; border-top: 6px solid #6d28d9; border-radius: 0.75rem; padding: 1.5rem; }
+            .card-title-purple { font-size: 1.125rem; font-weight: 700; color: #e2e8f0; margin-bottom: 1rem; }
+            .table-dark-custom { width: 100%; border-collapse: collapse; }
+            .table-dark-custom th { background: rgba(51, 65, 85, 0.3); color: #94a3b8; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.625rem 0.75rem; border-bottom: 1px solid #334155; text-align: left; }
+            .table-dark-custom td { padding: 0.625rem 0.75rem; border-bottom: 1px solid rgba(51,65,85,0.3); color: #e2e8f0; font-size: 0.875rem; vertical-align: middle; }
+            .table-dark-custom tr:hover td { background: rgba(51, 65, 85, 0.2); }
+            .badge-safe { background: #10b981; color: #ffffff; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 9999px; }
+            .badge-crit { background: #f59e0b; color: #1e293b; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 9999px; }
+            .badge-expired { background: #ef4444; color: #ffffff; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 9999px; }
+            .badge-archive { background: #64748b; color: #ffffff; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 9999px; }
+            .badge-purple { background: #6d28d9; color: #ffffff; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 0.375rem; }
+            .text-code { font-family: 'Courier New', monospace; color: #38bdf8; font-weight: 600; }
+            .btn-sm-dark { font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.625rem; border-radius: 0.375rem; border: 1px solid #475569; background: transparent; color: #94a3b8; cursor: pointer; transition: all 0.2s; }
+            .btn-sm-dark:hover { background: #334155; color: #ffffff; }
+            .modal-content-dark { background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; }
+            .modal-header-dark { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-bottom: 1px solid #334155; border-radius: 0.75rem 0.75rem 0 0; padding: 1rem 1.5rem; }
+            .modal-body-dark { padding: 1.5rem; }
+            .modal-footer-dark { background: #0f172a; border-top: 1px solid #334155; border-radius: 0 0 0.75rem 0.75rem; padding: 1rem 1.5rem; }
+            .btn-close-dark { filter: invert(1); }
+            .empty-state { color: #64748b; font-size: 0.875rem; }
+            .footer-custom { text-align: center; padding: 1.5rem; color: #64748b; font-size: 0.75rem; border-top: 1px solid #1e293b; margin-top: 1rem; }
+            .footer-custom span { color: #94a3b8; font-weight: 600; }
         </style>
     </head>
     <body>
     <nav class="navbar navbar-dark navbar-custom px-4 py-3 mb-4 d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center gap-3">
             <img src="${logoUrl}" alt="Verytech" style="height: 32px; width: auto; object-fit: contain;" />
-            <div style="width: 1px; height: 25px; background: rgba(255,255,255,0.2);"></div>
-            <span class="navbar-brand fw-bold m-0" style="font-size: 16px;">DETAYLI FİLTRE RAPORU</span>
+            <div class="section-divider"></div>
+            <span class="navbar-brand-custom">DETAYLI FİLTRE RAPORU</span>
         </div>
-        <a href="/dashboard" class="btn btn-sm btn-light fw-bold px-3 shadow-sm">⬅️ Ana Panele Dön</a>
+        <a href="/dashboard" class="btn-back">⬅️ Ana Panele Dön</a>
     </nav>
     <div class="container-fluid px-4">
-        <div class="card card-detay bg-white p-4">
-            <h4 class="fw-bold mb-4 text-dark">${filtreBaslik}</h4>
+        <div class="card-dark">
+            <h4 class="card-title-purple">${filtreBaslik}</h4>
             <div class="table-responsive">
-                <table id="detayTablo" class="table align-middle table-hover w-100">
-                    <thead class="table-light">
+                <table id="detayTablo" class="table-dark-custom w-100">
+                    <thead>
                         <tr><th>Müşteri</th><th>Marka</th><th>Ürün Adı</th><th>Seri No</th><th>Başlangıç</th><th>Bitiş</th><th>Durum</th><th class="text-center" style="width:50px;">Not</th></tr>
                     </thead>
                     <tbody>
-                        ${detaySatirlari || '<tr><td colspan="8" class="text-center text-muted">Kayıtlı ürün bulunamadı.</td></tr>'}
+                        ${detaySatirlari || '<tr><td colspan="8" class="text-center empty-state">Kayıtlı ürün bulunamadı.</td></tr>'}
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
+    <div class="footer-custom">©2026 - Designed By <span>Kerim KAPLAN</span></div>
+
     <div class="modal fade" id="notModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content style-radius">
-          <div class="modal-header navbar-custom text-white py-3"><h5 class="modal-title fw-bold fs-6">📝 Ürün Notu</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-          <div class="modal-body p-4"><p id="notIcerik" class="mb-0 text-dark"></p></div>
-          <div class="modal-footer bg-light"><button type="button" class="btn btn-sm btn-secondary fw-bold px-3" data-bs-dismiss="modal">Kapat</button></div>
+        <div class="modal-content modal-content-dark">
+          <div class="modal-header modal-header-dark"><h5 class="modal-title fw-bold fs-6 text-white">📝 Ürün Notu</h5><button type="button" class="btn-close btn-close-dark" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body modal-body-dark"><p id="notIcerik" style="color: #e2e8f0; margin: 0;"></p></div>
+          <div class="modal-footer modal-footer-dark"><button type="button" class="btn-sm-dark" data-bs-dismiss="modal">Kapat</button></div>
         </div>
       </div>
     </div>
@@ -992,7 +1318,7 @@ app.get('/api/cron/garanti-kontrol', async (req, res) => {
 
         if (mailGonderilecekMi) {
             await transporter.sendMail({
-                from: '"Verytech Garanti Takip Sistemi" <cinarcikofficial@gmail.com>',
+                from: '"Verytech Warranty Follow" <cinarcikofficial@gmail.com>',
                 to: 'kerim.kaplan@verytech.com.tr',
                 subject: '🚨 Verytech Garanti ve Bakım Bildirimi',
                 html: mailIcerik
