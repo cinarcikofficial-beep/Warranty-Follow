@@ -2,6 +2,7 @@ const express = require('express');
 const session = require('express-session');
 const { createClient } = require('@supabase/supabase-js');
 const nodemailer = require('nodemailer');
+const SupabaseSessionStore = require('./session-store');
 const app = express();
 
 // 1. SUPABASE BAĞLANTISI (GÜNCEL VERYTECH BAĞLANTILARI)
@@ -14,13 +15,17 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.use(session({
+    store: new SupabaseSessionStore(supabase, {
+        ttl: 86400
+    }),
     secret: 'verytech_gizli_anahtar_123',
     resave: false,
     saveUninitialized: false,
-    cookie: { 
-        secure: false, 
-        httpOnly: true, 
-        maxAge: 24 * 60 * 60 * 1000 // 24 saat
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: null
     }
 }));
 
